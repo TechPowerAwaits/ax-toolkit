@@ -2,7 +2,6 @@
 
 # Copyright 2021 Richard Johnston <techpowerawaits@outlook.com>
 # SPDX-license-identifier: 0BSD
-# VERSION 0.2.0
 
 major_ver=$1
 minor_ver=$2
