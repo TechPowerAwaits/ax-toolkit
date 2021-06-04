@@ -1,0 +1,7 @@
+# Requirements for ax-invconv.py
+openpyxl~=3.0.7
+# Most Linux distros providing openpyxl
+# add a dependency on jdcal. Seems like it
+# was required for a previous version, but
+# upstream no longer mentions it in their
+# requirements file.
