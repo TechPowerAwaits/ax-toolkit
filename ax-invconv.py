@@ -89,8 +89,8 @@ AXELOR_PRODUCT_FAMILIES = {
     "Subscription" : 1
 }
 AXELOR_PRODUCT_TYPE = [
-    "product",
-    "services"
+    "Product",
+    "Service"
 ]
 
 parser = argparse.ArgumentParser(
@@ -102,7 +102,7 @@ parser.add_argument("-t", "--type", default="xslx",
 parser.add_argument("-v", "--version", action="version", version=ver_str)
 parser.add_argument("-c", "--category", choices=AXELOR_PRODUCT_CATEGORIES, default="Package", help="Default product category to place in output")
 parser.add_argument("-f", "--family", choices=AXELOR_PRODUCT_FAMILIES, default="Equipment", help="Default product family to place in output")
-parser.add_argument("-T", "--Type", choices=AXELOR_PRODUCT_TYPE, default="product", help="Default product type to place in output")
+parser.add_argument("-T", "--Type", choices=AXELOR_PRODUCT_TYPE, default="Product", help="Default product type to place in output")
 parser.add_argument("input", help="Input file")
 parser_args = parser.parse_args()
 input_file = parser_args.input
