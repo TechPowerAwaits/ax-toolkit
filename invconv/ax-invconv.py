@@ -4,10 +4,12 @@
 import argparse
 import csv
 from openpyxl import load_workbook
+import os.path
 import string
 import sys
 
-with open("VERSION", "r") as version_file:
+ver_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "VERSION")
+with open(ver_path, "r") as version_file:
     ver_str = version_file.readline()
 
 AXELOR_CSV_COLUMNS = [
