@@ -4,6 +4,7 @@
 import argparse
 import csv
 from openpyxl import load_workbook
+import string
 import sys
 
 with open("VERSION", "r") as version_file:
@@ -92,6 +93,60 @@ AXELOR_PRODUCT_TYPE = [
     "Product",
     "Service"
 ]
+AXELOR_UNITS = {
+    "Box of 1000 Pces" : 10,
+    "Box of 100 Pces" : 8,
+    "Box of 12 Pces" : 5,
+    "Box of 2 Pces" : 3,
+    "Box of 500 Pces" : 9,
+    "Box of 50 Pces" : 7,
+    "Box of 6 Pces" : 4,
+    "Centigrams" : 20,
+    "Centimeter" : 29,
+    "Day" : 14,
+    "Decagrams" : 23,
+    "Decameter" : 32,
+    "Decigrams" : 21,
+    "Grams" : 22,
+    "Half-Day" : 13,
+    "Hectograms" : 24,
+    "Hectometer" : 33,
+    "Hour" : 12,
+    "Kilograms" : 25,
+    "Kilometer" : 34,
+    "Meter" : 31,
+    "Miles" : 35,
+    "Milligrams" : 19,
+    "Millimeter" : 28,
+    "Minute" : 11,
+    "Month" : 16,
+    "Percent" : 18,
+    "Piece" : 2,
+    "Quintal" : 26,
+    "Ton" : 27,
+    "Unit" : 1,
+    "Week" : 15,
+    "Year" : 17
+}
+AXELOR_UNITS_SHORTHAND = {
+    "Centigrams" : "cg",
+    "Centimeter" : "cm",
+    "Decagrams" : "dag",
+    "Decameter" : "dam",
+    "Grams" : "g",
+    "Hectograms" : "hg",
+    "Hectometer" : "hm",
+    "Hour" : "hr",
+    "Kilograms" : "kg",
+    "Kilometer" : "km",
+    "Minute" : "min",
+    "Percent" : '%',
+    "Piece" : "pce",
+    "Ton" : "t",
+    "Unit" : "u",
+    "Year" : "a"
+}
+MAX_UNIT_SHORTHAND = 3
 
 parser = argparse.ArgumentParser(
     description="Converts inventory lists to a Axelor-compatible CSV format",
@@ -124,7 +179,9 @@ csv_out.writerow(AXELOR_CSV_COLUMNS)
 xslx_col_index = {
     "description" : -1,
     "name" : -1,
-    "category" : -1
+    "category" : -1,
+    "sales_UOM" : -1,
+    "purchase_UOM" : -1
 }
 xslx_headers = []
 
@@ -173,6 +230,11 @@ for header in xslx_headers:
         xslx_col_index["name"] = header_index
     elif (header.lower().find("cat") != -1) and (xslx_col_index["category"] == -1):
         xslx_col_index["category"] = header_index
+    elif ((header.lower().find("unit") != -1) or
+    (header.lower().find("uom") != -1)) and (xslx_col_index["sales_UOM"] == -1):
+        xslx_col_index["sales_UOM"] = header_index
+    elif (header.lower().find("unit") != -1) and ((header.lower().find("package") != -1) or header.lower().find("pkg") != -1) and (xslx_col_index["purchase_UOM"] == -1):
+        xslx_col_index["purchase_UOM"] = header_index
     else:
         print("Warning: column " + '"' + header + '"' " from " + input_file +
         " will be ignored.", file=sys.stderr)
@@ -205,9 +267,7 @@ for row in xslx_file.active.iter_rows(
     col_index = xslx_min_col
     for cell in row:
         if col_index == xslx_col_index["name"]:
-            #print("DEBUG: NAME") DEBUG
             row_dict["name"] = cell
-            #print(row_dict["name"]) DEBUG
         elif col_index == xslx_col_index["description"]:
             row_dict["description"] = cell
             row_dict["internalDescription"] = cell
@@ -250,6 +310,40 @@ for row in xslx_file.active.iter_rows(
                 cat_incr[ax_code_str] = "".join('0' + str(code_incr_int))
             else:
                 cat_incr[ax_code_str] = str(code_incr_int)
+        elif (col_index == xslx_col_index["sales_UOM"]) or (col_index == xslx_col_index["purchase_UOM"]):
+            unit_id = -1
+            for unit in AXELOR_UNITS:
+                # These sections might contain int,
+                # so str must be forced.
+                if unit.lower() in str(cell).lower():
+                    unit_id = AXELOR_UNITS[unit]
+            if unit_id == -1:
+                digit_loc = -1
+                string_index = 0
+                while string_index < len(str(cell)):
+                    char = str(cell)[string_index]
+                    if char in string.digits:
+                        digit_loc = string_index
+                    string_index = string_index + 1
+                if (digit_loc != -1) and (digit_loc != (len(str(cell))-1)):
+                    # Test for a shortened unit form.
+                    short_incr = 1
+                    test_str = []
+                    while ( (short_incr + string_index) < len(str(cell)) ):
+                        test_str += str(cell)[string_index + short_incr]
+                        short_incr = short_incr + 1
+                    test_str = "".join(test_str)
+                    for unit in AXELOR_UNITS_SHORTHAND:
+                        if AXELOR_UNITS_SHORTHAND[unit] in test_str:
+                            unit_id = AXELOR_UNITS[unit]
+            if unit_id == -1:
+                unit_id = AXELOR_UNITS["Unit"]
+            if col_index == xslx_col_index["sales_UOM"]:
+                row_dict["salesUnit_importId"] = unit_id
+            elif col_index == xslx_col_index["purchase_UOM"]:
+                row_dict["purchasesUnit_importId"] = unit_id
+            else:
+                pass
         else:
             pass
         col_index = col_index + 1
