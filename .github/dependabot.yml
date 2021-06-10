@@ -1,7 +1,11 @@
 version: 2
 updates:
   - package-ecosystem: "pip"
-    directory: "/"
+    directory: "/get"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "pip"
+    directory: "/invconv"
     schedule:
       interval: "daily"
   - package-ecosystem: "github-actions"
