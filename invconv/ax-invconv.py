@@ -8,9 +8,14 @@ import os.path
 import string
 import sys
 
+# Import invconv-specific modules
+from modules import invconv_ini
+
 ver_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "VERSION")
 with open(ver_path, "r") as version_file:
     ver_str = version_file.readline()
+
+SUPPORTED_FORMAT_VER = 1
 
 AXELOR_CSV_COLUMNS = [
     "procurementMethodSelect",
@@ -35,121 +40,56 @@ AXELOR_CSV_COLUMNS = [
     "fullName",
     "saleCurrency_importId",
 ]
-AXELOR_FAMILY_SHORTHAND = {
-    "Components": "COMP",
-    "Consumables": "CONS",
-    "Equipment": "EQPT",
-    "Expenses": "TEXP",
-    "Services": "SERV",
-    "Subscription": "HSGT",
-}
-AXELOR_PRODUCT_CATEGORIES = {
-    "Accomodation": 16,
-    "Case": 7,
-    "Hard Disk": 5,
-    "Hosting": 1,
-    "Maintenance": 2,
-    "Meal": 15,
-    "Memory": 8,
-    "Motherboard": 9,
-    "Non-perishable": 10,
-    "Package": 18,
-    "Perishable": 11,
-    "Printer": 4,
-    "Processor": 6,
-    "Project based": 13,
-    "Screen": 17,
-    "Server": 3,
-    "Time based": 12,
-    "Transport": 14,
-}
-AXELOR_CATEGORY_SHORTHAND = {
-    "Accomodation": "ACCO",
-    "Case": "CASE",
-    "Hard Disk": "HDD",
-    "Hosting": "HOST",
-    "Maintenance": "MAIN",
-    "Meal": "MEAL",
-    "Memory": "MEM",
-    "Motherboard": "MOB",
-    "Non-perishable": "NPER",
-    "Package": "PACK",
-    "Perishable": "PER",
-    "Print": "PTR",
-    "Processor": "PROC",
-    "Project based": "PROB",
-    "Screen": "SCR",
-    "Server": "SER",
-    "Time based": "TIMB",
-    "Transport": "TRAN",
-}
-AXELOR_PRODUCT_FAMILIES = {
-    "Components": 3,
-    "Consumables": 4,
-    "Equipment": 2,
-    "Expenses": 6,
-    "Services": 5,
-    "Subscription": 1,
-}
-AXELOR_PRODUCT_TYPE = ["Product", "Service"]
-AXELOR_UNITS = {
-    "Box of 1000 Pces": 10,
-    "Box of 100 Pces": 8,
-    "Box of 12 Pces": 5,
-    "Box of 2 Pces": 3,
-    "Box of 500 Pces": 9,
-    "Box of 50 Pces": 7,
-    "Box of 6 Pces": 4,
-    "Centigrams": 20,
-    "Centimeter": 29,
-    "Day": 14,
-    "Decagrams": 23,
-    "Decameter": 32,
-    "Decigrams": 21,
-    "Grams": 22,
-    "Half-Day": 13,
-    "Hectograms": 24,
-    "Hectometer": 33,
-    "Hour": 12,
-    "Kilograms": 25,
-    "Kilometer": 34,
-    "Meter": 31,
-    "Miles": 35,
-    "Milligrams": 19,
-    "Millimeter": 28,
-    "Minute": 11,
-    "Month": 16,
-    "Percent": 18,
-    "Piece": 2,
-    "Quintal": 26,
-    "Ton": 27,
-    "Unit": 1,
-    "Week": 15,
-    "Year": 17,
-}
-AXELOR_UNITS_SHORTHAND = {
-    "Centigrams": "cg",
-    "Centimeter": "cm",
-    "Decagrams": "dag",
-    "Decameter": "dam",
-    "Grams": "g",
-    "Hectograms": "hg",
-    "Hectometer": "hm",
-    "Hour": "hr",
-    "Kilograms": "kg",
-    "Kilometer": "km",
-    "Minute": "min",
-    "Percent": "%",
-    "Piece": "pce",
-    "Ton": "t",
-    "Unit": "u",
-    "Year": "a",
-}
-MAX_UNIT_SHORTHAND = 3
+axelor_family_shorthand = {}
+axelor_product_categories = {}
+axelor_category_shorthand = {}
+axelor_product_families = {}
+axelor_product_types = []
+axelor_units = {}
+axelor_units_shorthand = {}
+max_unit_shorthand = 0
 
 parser = argparse.ArgumentParser(
     description="Converts inventory lists to a Axelor-compatible CSV format",
     epilog="Licensed under the 0BSD.",
+    add_help=False,
+)
+parser.add_argument("-d", "--data-file", default="demo.ini", help="INI data file")
+data_file = parser.parse_known_args()[0].data_file
+data_parser = invconv_ini.data_parser
+data_parser.read(data_file)
+data_format_version = data_parser.getint("INFO", "INVCONV_FORMAT")
+if data_format_version != SUPPORTED_FORMAT_VER:
+    print(
+        "FE: Data format version %s is unsupported.",
+        data_format_version,
+        file=sys.stderr,
+    )
+    sys.exit(1)
+for key in data_parser["AXELOR_PRODUCT_CATEGORIES"]:
+    axelor_product_categories[key] = int(data_parser["AXELOR_PRODUCT_CATEGORIES"][key])
+    if key in data_parser["AXELOR_PRODUCT_CATEGORIES_ABREV"]:
+        axelor_category_shorthand[key] = data_parser["AXELOR_PRODUCT_CATEGORIES_ABREV"][
+            key
+        ]
+for key in data_parser["AXELOR_PRODUCT_FAMILIES"]:
+    axelor_product_families[key] = int(data_parser["AXELOR_PRODUCT_FAMILIES"][key])
+    if key in data_parser["AXELOR_PRODUCT_FAMILIES_ABREV"]:
+        axelor_family_shorthand[key] = data_parser["AXELOR_PRODUCT_FAMILIES_ABREV"][key]
+for key in data_parser["AXELOR_PRODUCT_TYPES"]:
+    axelor_product_types += [key]
+for key in data_parser["AXELOR_UNITS"]:
+    axelor_units[key] = data_parser["AXELOR_UNITS"][key]
+    if key in data_parser["AXELOR_UNITS_ABREV"]:
+        axelor_units_shorthand[key] = data_parser["AXELOR_UNITS_ABREV"][key]
+default_product_category = data_parser.get("CONSTANTS", "AXELOR_PRODUCT_CATEGORIES")
+default_product_family = data_parser.get("CONSTANTS", "AXELOR_PRODUCT_FAMILIES")
+default_product_type = data_parser.get("CONSTANTS", "AXELOR_PRODUCT_TYPES")
+default_unit = data_parser.get("CONSTANTS", "AXELOR_UNITS")
+max_unit_shorthand = data_parser.get("CONSTANTS", "MAX_UNIT_SHORTHAND")
+
+parser.add_argument(
+    "-h", "--help", action="help", help="show this help message and exit"
 )
 parser.add_argument(
     "-t",
@@ -162,30 +102,39 @@ parser.add_argument("-v", "--version", action="version", version=ver_str)
 parser.add_argument(
     "-c",
     "--category",
-    choices=AXELOR_PRODUCT_CATEGORIES,
-    default="Package",
-    help="Default product category to place in output",
+    choices=axelor_product_categories,
+    default=default_product_category,
+    help="Fallback product category to place in output",
 )
 parser.add_argument(
     "-f",
     "--family",
-    choices=AXELOR_PRODUCT_FAMILIES,
-    default="Equipment",
-    help="Default product family to place in output",
+    choices=axelor_product_families,
+    default=default_product_family,
+    help="Fallback product family to place in output",
 )
 parser.add_argument(
     "-T",
     "--Type",
-    choices=AXELOR_PRODUCT_TYPE,
-    default="Product",
-    help="Default product type to place in output",
+    choices=axelor_product_types,
+    default=default_product_type,
+    help="Fallback product type to place in output",
+)
+parser.add_argument(
+    "-u",
+    "--unit",
+    choices=axelor_units,
+    default=default_unit,
+    help="Fallback unit to place in output",
 )
 parser.add_argument("input", help="Input file")
+
 parser_args = parser.parse_args()
 input_file = parser_args.input
-default_category = parser_args.category
-default_family = parser_args.family
-default_type = parser_args.Type
+fallback_category = parser_args.category
+fallback_family = parser_args.family
+fallback_type = parser_args.Type
+fallback_unit = parser_args.unit
 
 xslx_file = load_workbook(
     input_file, read_only=True, keep_vba=False, data_only=True, keep_links=False
@@ -304,26 +253,26 @@ for row in xslx_file.active.iter_rows(
         elif col_index == xslx_col_index["category"]:
             valid_cat = False
             valid_fam = False
-            for prod_cat in AXELOR_PRODUCT_CATEGORIES:
+            for prod_cat in axelor_product_categories:
                 if prod_cat == cell:
                     valid_cat = True
-                    row_dict["productCategory_importId"] = AXELOR_PRODUCT_CATEGORIES[
+                    row_dict["productCategory_importId"] = axelor_product_categories[
                         cell
                     ]
                     break
-            for prod_fam in AXELOR_PRODUCT_FAMILIES:
+            for prod_fam in axelor_product_families:
                 if prod_fam == cell:
                     valid_fam = True
-                    row_dict["productFamily_importId"] = AXELOR_PRODUCT_FAMILIES[cell]
+                    row_dict["productFamily_importId"] = axelor_product_families[cell]
                     break
             code_incr = ""
             ax_code_str = ""
             if valid_fam:
-                ax_code_str = AXELOR_FAMILY_SHORTHAND.get(
+                ax_code_str = axelor_family_shorthand.get(
                     cell, cell.upper().replace(" ", "_")
                 )
             elif valid_cat:
-                ax_code_str = AXELOR_CATEGORY_SHORTHAND.get(
+                ax_code_str = axelor_category_shorthand.get(
                     cell, cell.upper().replace(" ", "_")
                 )
             else:
@@ -332,12 +281,12 @@ for row in xslx_file.active.iter_rows(
             cat_incr[ax_code_str] = code_incr
             row_dict["code"] = ax_code_str + "-" + code_incr
             if not valid_fam:
-                row_dict["productFamily_importId"] = AXELOR_PRODUCT_FAMILIES[
-                    default_family
+                row_dict["productFamily_importId"] = axelor_product_families[
+                    fallback_family
                 ]
             if not valid_cat:
-                row_dict["productCategory_importId"] = AXELOR_PRODUCT_CATEGORIES[
-                    default_category
+                row_dict["productCategory_importId"] = axelor_product_categories[
+                    fallback_category
                 ]
             # Increment counter.
             code_incr_int = int(code_incr)
@@ -354,11 +303,11 @@ for row in xslx_file.active.iter_rows(
             col_index == xslx_col_index["purchase_UOM"]
         ):
             unit_id = -1
-            for unit in AXELOR_UNITS:
+            for unit in axelor_units:
                 # These sections might contain int,
                 # so str must be forced.
                 if unit.lower() in str(cell).lower():
-                    unit_id = AXELOR_UNITS[unit]
+                    unit_id = axelor_units[unit]
             if unit_id == -1:
                 digit_loc = -1
                 string_index = 0
@@ -375,11 +324,11 @@ for row in xslx_file.active.iter_rows(
                         test_str += str(cell)[string_index + short_incr]
                         short_incr = short_incr + 1
                     test_str = "".join(test_str)
-                    for unit in AXELOR_UNITS_SHORTHAND:
-                        if AXELOR_UNITS_SHORTHAND[unit] in test_str:
-                            unit_id = AXELOR_UNITS[unit]
+                    for unit in axelor_units_shorthand:
+                        if axelor_units_shorthand[unit] in test_str:
+                            unit_id = axelor_units[unit]
             if unit_id == -1:
-                unit_id = AXELOR_UNITS["Unit"]
+                unit_id = axelor_units[fallback_unit]
             if col_index == xslx_col_index["sales_UOM"]:
                 row_dict["salesUnit_importId"] = unit_id
             elif col_index == xslx_col_index["purchase_UOM"]:
@@ -390,7 +339,7 @@ for row in xslx_file.active.iter_rows(
             pass
         col_index = col_index + 1
     # Add values not directly based on XSLX file.
-    row_dict["productTypeSelect"] = default_type
+    row_dict["productTypeSelect"] = fallback_type
     row_dict["fullName"] = "[" + row_dict["code"] + "]" + " " + row_dict["name"]
 
     csv_out.writerow(row_dict.values())

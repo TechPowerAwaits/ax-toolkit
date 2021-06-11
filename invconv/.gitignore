@@ -1,4 +1,7 @@
 *.csv
+*.ini
+__pycache__
 *.xlsx
+!demo.ini
 !test/expected.csv
 !test/test.xlsx
