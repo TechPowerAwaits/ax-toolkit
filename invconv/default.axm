@@ -1,0 +1,9 @@
+description: DESCRIPT
+internalDescription> description
+productTypeSelect> description
+name: NAME, ID
+productCategory_importId: CATEGORY, CATEGORIES
+productFamily_importId: FAMILY, FAMILIES, CATEGORY, CATEGORIES
+code> productFamily_importId
+salesUnit_importId: UNIT, UOM
+purchasesUnit_importId: UNIT

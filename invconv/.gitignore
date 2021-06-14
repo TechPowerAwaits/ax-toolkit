@@ -1,7 +1,9 @@
+*.axm
 *.csv
 *.ini
 __pycache__
 *.xlsx
+!default.axm
 !demo.ini
 !test/expected.csv
 !test/test.xlsx
