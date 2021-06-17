@@ -9,15 +9,12 @@ import sys
 # Import invconv-specific modules
 from modules import axm_parser
 from modules import common
-from modules import invconv_ini
 from modules import invconv_logic
 from modules import panic_handler
 
 ver_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "VERSION")
 with open(ver_path, "r") as version_file:
     ver_str = version_file.readline()
-
-SUPPORTED_FORMAT_VER = 1
 
 parser = argparse.ArgumentParser(
     description="Converts inventory lists to a Axelor-compatible CSV format",
@@ -26,43 +23,8 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument("-d", "--data-file", default="demo.ini", help="INI data file")
 data_file = parser.parse_known_args()[0].data_file
-data_parser = invconv_ini.data_parser
-data_parser.read(data_file)
-data_format_version = data_parser.getint("INFO", "INVCONV_FORMAT")
-if data_format_version != SUPPORTED_FORMAT_VER:
-    print(
-        "FE: Data format version %i is unsupported.",
-        data_format_version,
-        file=sys.stderr,
-    )
-    sys.exit(1)
-for key in data_parser["AXELOR_PRODUCT_CATEGORIES"]:
-    common.axelor_product_categories[key] = int(
-        data_parser["AXELOR_PRODUCT_CATEGORIES"][key]
-    )
-    if key in data_parser["AXELOR_PRODUCT_CATEGORIES_ABREV"]:
-        common.axelor_category_shorthand[key] = data_parser[
-            "AXELOR_PRODUCT_CATEGORIES_ABREV"
-        ][key]
-for key in data_parser["AXELOR_PRODUCT_FAMILIES"]:
-    common.axelor_product_families[key] = int(
-        data_parser["AXELOR_PRODUCT_FAMILIES"][key]
-    )
-    if key in data_parser["AXELOR_PRODUCT_FAMILIES_ABREV"]:
-        common.axelor_family_shorthand[key] = data_parser[
-            "AXELOR_PRODUCT_FAMILIES_ABREV"
-        ][key]
-for key in data_parser["AXELOR_PRODUCT_TYPES"]:
-    common.axelor_product_types += [key]
-for key in data_parser["AXELOR_UNITS"]:
-    common.axelor_units[key] = data_parser["AXELOR_UNITS"][key]
-    if key in data_parser["AXELOR_UNITS_ABREV"]:
-        common.axelor_units_shorthand[key] = data_parser["AXELOR_UNITS_ABREV"][key]
-default_product_category = data_parser.get("CONSTANTS", "AXELOR_PRODUCT_CATEGORIES")
-default_product_family = data_parser.get("CONSTANTS", "AXELOR_PRODUCT_FAMILIES")
-default_product_type = data_parser.get("CONSTANTS", "AXELOR_PRODUCT_TYPES")
-default_unit = data_parser.get("CONSTANTS", "AXELOR_UNITS")
-max_unit_shorthand = data_parser.get("CONSTANTS", "MAX_UNIT_SHORTHAND")
+with open(data_file) as data_fptr:
+    common.init(data_fptr)
 
 parser.add_argument("-m", "--map-file", default="default.axm", help="AXM map file")
 parser.add_argument(
@@ -81,32 +43,31 @@ parser.add_argument(
     "-c",
     "--category",
     choices=common.axelor_product_categories,
-    default=default_product_category,
+    default=common.fallback_category,
     help="Fallback product category to place in output",
 )
 parser.add_argument(
     "-f",
     "--family",
     choices=common.axelor_product_families,
-    default=default_product_family,
+    default=common.fallback_family,
     help="Fallback product family to place in output",
 )
 parser.add_argument(
     "-T",
     "--Type",
     choices=common.axelor_product_types,
-    default=default_product_type,
+    default=common.fallback_type,
     help="Fallback product type to place in output",
 )
 parser.add_argument(
     "-u",
     "--unit",
     choices=common.axelor_units,
-    default=default_unit,
+    default=common.fallback_unit,
     help="Fallback unit to place in output",
 )
 parser.add_argument("input", nargs="+", help="Input file(s)")
-
 parser_args = parser.parse_args()
 input_files = parser_args.input
 map_file = parser_args.map_file
