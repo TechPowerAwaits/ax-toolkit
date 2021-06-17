@@ -73,8 +73,8 @@ parser.add_argument("-v", "--version", action="version", version=ver_str)
 parser.add_argument(
     "-t",
     "--type",
-    default="xslx",
-    choices=["xslx"],
+    default="xlsx",
+    choices=["xlsx"],
     help="The type of file that is being imported",
 )
 parser.add_argument(
@@ -116,34 +116,34 @@ common.fallback_type = parser_args.Type
 common.fallback_unit = parser_args.unit
 
 file_section_ids = []
-# The xslx files might have a title,
+# The xlsx files might have a title,
 # which needs to be avoided.
 header_row = {}
 
 for input_file in input_files:
     # Simply test that all the files specified exist
     # and create ID for each one.
-    xslx_file = load_workbook(
+    xlsx_file = load_workbook(
         input_file, read_only=True, keep_vba=False, data_only=True, keep_links=False
     )
     name_col_index = -1
     file_section_index = 0
-    for ws_name in xslx_file.sheetnames:
+    for ws_name in xlsx_file.sheetnames:
         file_section_ids += [input_file + " WS: " + ws_name]
     file_section_index = file_section_index + 1
-    xslx_file.close()
+    xlsx_file.close()
 
-# On some xslx files, the max_row and max_col
+# On some xlsx files, the max_row and max_col
 # cannot be read.
 max_rows = {}
 max_cols = {}
 file_section_incr = 0
 
 for input_file in input_files:
-    xslx_file = load_workbook(
+    xlsx_file = load_workbook(
         input_file, read_only=True, keep_vba=False, data_only=True, keep_links=False
     )
-    for ws in xslx_file.worksheets:
+    for ws in xlsx_file.worksheets:
         file_section_id = file_section_ids[file_section_incr]
 
         max_row = ws.max_row
@@ -189,7 +189,7 @@ for input_file in input_files:
                 print(less_than_one_msg, end="", file=sys.stderr)
         max_cols[file_section_id] = max_col
         file_section_incr += 1
-    xslx_file.close()
+    xlsx_file.close()
 
 
 # A row with just a title would not fill up the entire
@@ -199,14 +199,14 @@ start_title_col = 1
 end_title_col = 2
 
 # Find where columns are and figure out the proper mapping
-# between Axelor CSV and XSLX.
+# between Axelor CSV and xlsx.
 file_section_incr = 0
-xslx_headers = {}
+xlsx_headers = {}
 for input_file in input_files:
-    xslx_file = load_workbook(
+    xlsx_file = load_workbook(
         input_file, read_only=True, keep_vba=False, data_only=True, keep_links=False
     )
-    for ws in xslx_file.worksheets:
+    for ws in xlsx_file.worksheets:
         file_section_id = file_section_ids[file_section_incr]
         # Assume the first line is not title unless otherwise found out.
         header_row[file_section_id] = 1
@@ -232,7 +232,7 @@ for input_file in input_files:
                 file=sys.stderr,
             )
             sys.exit(1)
-        xslx_headers[file_section_id] = []
+        xlsx_headers[file_section_id] = []
         for line in ws.iter_rows(
             min_row=header_row[file_section_id],
             max_row=header_row[file_section_id],
@@ -240,14 +240,14 @@ for input_file in input_files:
             max_col=max_cols[file_section_id],
         ):
             for header in line:
-                xslx_headers[file_section_id] += [header.value]
+                xlsx_headers[file_section_id] += [header.value]
         with open(map_file) as map_fptr:
             common.map_dict[file_section_id] = {}
             while True:
                 axm_line = axm_parser.get_axm_data(
                     map_fptr,
                     file_section_id,
-                    xslx_headers[file_section_id],
+                    xlsx_headers[file_section_id],
                 )
                 if axm_line is not None:
                     for key in axm_line:
@@ -255,23 +255,23 @@ for input_file in input_files:
                 else:
                     break
         file_section_incr += 1
-    xslx_file.close()
+    xlsx_file.close()
 
 file_section_incr = 0
 invconv_logic.commit_headers()
 for input_file in input_files:
-    xslx_file = load_workbook(
+    xlsx_file = load_workbook(
         input_file, read_only=True, keep_vba=False, data_only=True, keep_links=False
     )
-    for ws in xslx_file.worksheets:
+    for ws in xlsx_file.worksheets:
         file_section_id = file_section_ids[file_section_incr]
         invconv_logic.file_ws_init(file_section_id, max_cols[file_section_id])
 
         # Use headers gathered earlier.
-        for index_xslx_header in enumerate(xslx_headers[file_section_id], 1):
-            header_index = index_xslx_header[0]
-            xslx_header = index_xslx_header[1]
-            invconv_logic.set_header_location(xslx_header, header_index)
+        for index_xlsx_header in enumerate(xlsx_headers[file_section_id], 1):
+            header_index = index_xlsx_header[0]
+            xlsx_header = index_xlsx_header[1]
+            invconv_logic.set_header_location(xlsx_header, header_index)
 
         # Don't need to start at header row.
         starting_row = header_row[file_section_id] + 1
@@ -287,4 +287,4 @@ for input_file in input_files:
                 cell = index_cell[1]
                 invconv_logic.main(cell)
         file_section_incr += 1
-    xslx_file.close()
+    xlsx_file.close()
