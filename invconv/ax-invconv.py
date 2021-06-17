@@ -11,6 +11,7 @@ from modules import axm_parser
 from modules import common
 from modules import invconv_ini
 from modules import invconv_logic
+from modules import panic_handler
 
 ver_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "VERSION")
 with open(ver_path, "r") as version_file:
@@ -132,6 +133,65 @@ for input_file in input_files:
     file_section_index = file_section_index + 1
     xslx_file.close()
 
+# On some xslx files, the max_row and max_col
+# cannot be read.
+max_rows = {}
+max_cols = {}
+file_section_incr = 0
+
+for input_file in input_files:
+    xslx_file = load_workbook(
+        input_file, read_only=True, keep_vba=False, data_only=True, keep_links=False
+    )
+    for ws in xslx_file.worksheets:
+        file_section_id = file_section_ids[file_section_incr]
+
+        max_row = ws.max_row
+        max_col = ws.max_column
+        type_val_err_msg = "Provided value was invalid. Setting variable to None."
+        less_than_one_msg = (
+            "Provided numerical value was invalid. Counting should start at one."
+        )
+        while (not isinstance(max_row, int)) or (max_row <= 0):
+            try:
+                max_row = int(
+                    panic_handler.user_input(
+                        f"Max row for {file_section_id} is {str(max_row)}.",
+                        "Please provide the number of rows (starting at 1)",
+                    )
+                )
+            except (ValueError, TypeError):
+                print(
+                    type_val_err_msg,
+                    end="",
+                    file=sys.stderr,
+                )
+                max_row = None
+            if (isinstance(max_row, int)) and (max_row <= 0):
+                print(
+                    less_than_one_msg,
+                    end="",
+                    file=sys.stderr,
+                )
+        max_rows[file_section_id] = max_row
+        while (not isinstance(max_col, int)) or (max_col <= 0):
+            try:
+                max_col = int(
+                    panic_handler.user_input(
+                        f"Max col for {file_section_id} is {str(max_col)}.",
+                        "Please provide the number of columns (starting at 1)",
+                    )
+                )
+            except (ValueError, TypeError):
+                print(type_val_err_msg, end="", file=sys.stderr)
+                max_col = None
+            if (isinstance(max_col, int)) and (max_col <= 0):
+                print(less_than_one_msg, end="", file=sys.stderr)
+        max_cols[file_section_id] = max_col
+        file_section_incr += 1
+    xslx_file.close()
+
+
 # A row with just a title would not fill up the entire
 # max_column. As a result, there would be None at either
 # the first or second position.
@@ -150,9 +210,10 @@ for input_file in input_files:
         file_section_id = file_section_ids[file_section_incr]
         # Assume the first line is not title unless otherwise found out.
         header_row[file_section_id] = 1
+
         for row in ws.iter_rows(
             min_row=ws.min_row,
-            max_row=ws.max_row,
+            max_row=max_rows[file_section_id],
             min_col=start_title_col,
             max_col=end_title_col,
             values_only=True,
@@ -165,7 +226,7 @@ for input_file in input_files:
                     break
             if is_valid_header_row:
                 break
-        if header_row[file_section_id] > ws.max_row:
+        if header_row[file_section_id] > max_rows[file_section_id]:
             print(
                 "FE: Can't find headers in {file_section_id}",
                 file=sys.stderr,
@@ -176,7 +237,7 @@ for input_file in input_files:
             min_row=header_row[file_section_id],
             max_row=header_row[file_section_id],
             min_col=ws.min_column,
-            max_col=ws.max_column,
+            max_col=max_cols[file_section_id],
         ):
             for header in line:
                 xslx_headers[file_section_id] += [header.value]
@@ -204,7 +265,7 @@ for input_file in input_files:
     )
     for ws in xslx_file.worksheets:
         file_section_id = file_section_ids[file_section_incr]
-        invconv_logic.file_ws_init(file_section_id, ws.max_column)
+        invconv_logic.file_ws_init(file_section_id, max_cols[file_section_id])
 
         # Use headers gathered earlier.
         for index_xslx_header in enumerate(xslx_headers[file_section_id], 1):
@@ -216,9 +277,9 @@ for input_file in input_files:
         starting_row = header_row[file_section_id] + 1
         for row in ws.iter_rows(
             min_row=starting_row,
-            max_row=ws.max_row,
+            max_row=max_rows[file_section_id],
             min_col=ws.min_column,
-            max_col=ws.max_column,
+            max_col=max_cols[file_section_id],
             values_only=True,
         ):
             for index_cell in enumerate(row, 1):
