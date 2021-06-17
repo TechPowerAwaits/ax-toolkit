@@ -2,11 +2,12 @@
 # SPDX-license-identifier: 0BSD
 
 from modules import common
+from modules import panic_handler
 import string
 import sys
 
 
-def get_axm_data(axm_fptr, file_section_id, input_columns):
+def get_axm_data(axm_fptr, input_file, ws_name, input_columns):
     axm_dict = {}
     line = axm_fptr.readline().replace("\n", " ").replace(" ", "")
     if ":" in line:
@@ -29,14 +30,17 @@ def get_axm_data(axm_fptr, file_section_id, input_columns):
             print(
                 string.Template(
                     "FE: $header cannot be set from data in $id"
-                ).substitute(header=dict_key_map[0], id=file_section_id),
+                ).substitute(
+                    header=dict_key_map[0],
+                    id=panic_handler.get_xlsx_id(input_file, ws_name),
+                ),
                 file=sys.stderr,
             )
             sys.exit(1)
     elif ">" in line:
         dict_key_equiv = line.split(">")
-        if dict_key_equiv[1] in common.map_dict[file_section_id]:
-            axm_dict[dict_key_equiv[0]] = common.map_dict[file_section_id][
+        if dict_key_equiv[1] in common.map_dict[(input_file, ws_name)]:
+            axm_dict[dict_key_equiv[0]] = common.map_dict[(input_file, ws_name)][
                 dict_key_equiv[1]
             ]
         else:
@@ -46,7 +50,7 @@ def get_axm_data(axm_fptr, file_section_id, input_columns):
                 ).substitute(
                     header=dict_key_equiv[0],
                     target=dict_key_equiv[1],
-                    id=file_section_id,
+                    id=panic_handler.get_xlsx_id(input_file, ws_name),
                 ),
                 file=sys.stderr,
             )

@@ -4,6 +4,7 @@
 import argparse
 from openpyxl import load_workbook
 import os.path
+import string
 import sys
 
 # Import invconv-specific modules
@@ -76,36 +77,25 @@ common.fallback_family = parser_args.family
 common.fallback_type = parser_args.Type
 common.fallback_unit = parser_args.unit
 
-file_section_ids = []
-# The xlsx files might have a title,
-# which needs to be avoided.
-header_row = {}
-
-for input_file in input_files:
-    # Simply test that all the files specified exist
-    # and create ID for each one.
-    xlsx_file = load_workbook(
-        input_file, read_only=True, keep_vba=False, data_only=True, keep_links=False
-    )
-    name_col_index = -1
-    file_section_index = 0
-    for ws_name in xlsx_file.sheetnames:
-        file_section_ids += [input_file + " WS: " + ws_name]
-    file_section_index = file_section_index + 1
-    xlsx_file.close()
-
 # On some xlsx files, the max_row and max_col
 # cannot be read.
 max_rows = {}
 max_cols = {}
-file_section_incr = 0
+
+# Store dictionary of header names for future
+# reference.
+file_ws_dict = {}
 
 for input_file in input_files:
+    file_ws_dict[input_file] = []
     xlsx_file = load_workbook(
         input_file, read_only=True, keep_vba=False, data_only=True, keep_links=False
     )
-    for ws in xlsx_file.worksheets:
-        file_section_id = file_section_ids[file_section_incr]
+    xlsx_ws_list = xlsx_file.sheetnames
+    for ws_name in xlsx_ws_list:
+        xlsx_id = panic_handler.get_xlsx_id(input_file, ws_name)
+        file_ws_dict[input_file] += [ws_name]
+        ws = xlsx_file[ws_name]
 
         max_row = ws.max_row
         max_col = ws.max_column
@@ -117,7 +107,7 @@ for input_file in input_files:
             try:
                 max_row = int(
                     panic_handler.user_input(
-                        f"Max row for {file_section_id} is {str(max_row)}.",
+                        f"Max row for {xlsx_id} is {str(max_row)}.",
                         "Please provide the number of rows (starting at 1)",
                     )
                 )
@@ -134,12 +124,12 @@ for input_file in input_files:
                     end="",
                     file=sys.stderr,
                 )
-        max_rows[file_section_id] = max_row
+        max_rows[(input_file, ws_name)] = max_row
         while (not isinstance(max_col, int)) or (max_col <= 0):
             try:
                 max_col = int(
                     panic_handler.user_input(
-                        f"Max col for {file_section_id} is {str(max_col)}.",
+                        f"Max col for {xlsx_id} is {str(max_col)}.",
                         "Please provide the number of columns (starting at 1)",
                     )
                 )
@@ -148,10 +138,12 @@ for input_file in input_files:
                 max_col = None
             if (isinstance(max_col, int)) and (max_col <= 0):
                 print(less_than_one_msg, end="", file=sys.stderr)
-        max_cols[file_section_id] = max_col
-        file_section_incr += 1
+        max_cols[(input_file, ws_name)] = max_col
     xlsx_file.close()
 
+# The xlsx files might have a title,
+# which needs to be avoided.
+min_header_rows = {}
 
 # A row with just a title would not fill up the entire
 # max_column. As a result, there would be None at either
@@ -159,22 +151,19 @@ for input_file in input_files:
 start_title_col = 1
 end_title_col = 2
 
-# Find where columns are and figure out the proper mapping
-# between Axelor CSV and xlsx.
-file_section_incr = 0
-xlsx_headers = {}
-for input_file in input_files:
+# Find where headers are inside each worksheet.
+for input_file in file_ws_dict:
     xlsx_file = load_workbook(
         input_file, read_only=True, keep_vba=False, data_only=True, keep_links=False
     )
-    for ws in xlsx_file.worksheets:
-        file_section_id = file_section_ids[file_section_incr]
+    for ws_name in file_ws_dict[input_file]:
+        ws = xlsx_file[ws_name]
         # Assume the first line is not title unless otherwise found out.
-        header_row[file_section_id] = 1
+        header_row = 1
 
         for row in ws.iter_rows(
             min_row=ws.min_row,
-            max_row=max_rows[file_section_id],
+            max_row=max_rows[(input_file, ws_name)],
             min_col=start_title_col,
             max_col=end_title_col,
             values_only=True,
@@ -183,69 +172,175 @@ for input_file in input_files:
             for cell in row:
                 if cell is None:
                     is_valid_header_row = False
-                    header_row[file_section_id] = header_row[file_section_id] + 1
+                    header_row += 1
                     break
             if is_valid_header_row:
                 break
-        if header_row[file_section_id] > max_rows[file_section_id]:
-            print(
-                "FE: Can't find headers in {file_section_id}",
-                file=sys.stderr,
-            )
-            sys.exit(1)
-        xlsx_headers[file_section_id] = []
-        for line in ws.iter_rows(
-            min_row=header_row[file_section_id],
-            max_row=header_row[file_section_id],
-            min_col=ws.min_column,
-            max_col=max_cols[file_section_id],
-        ):
-            for header in line:
-                xlsx_headers[file_section_id] += [header.value]
-        with open(map_file) as map_fptr:
-            common.map_dict[file_section_id] = {}
-            while True:
-                axm_line = axm_parser.get_axm_data(
-                    map_fptr,
-                    file_section_id,
-                    xlsx_headers[file_section_id],
-                )
-                if axm_line is not None:
-                    for key in axm_line:
-                        common.map_dict[file_section_id][key] = axm_line[key]
-                else:
-                    break
-        file_section_incr += 1
+        # Only add to min_header_row if the header was found
+        # and is not the only thing in object.
+        if header_row < max_rows[(input_file, ws_name)]:
+            # Check if there are only empty rows after header.
+            post_header = header_row + 1
+            row_list = []
+            for row in ws.iter_rows(
+                min_row=post_header,
+                max_row=post_header,
+                min_col=ws.min_column,
+                max_col=max_cols[(input_file, ws_name)],
+                values_only=True,
+            ):
+                for cell in row:
+                    row_list += [str(cell)]
+            if row_list.count("None") != len(row_list):
+                min_header_rows[(input_file, ws_name)] = header_row
     xlsx_file.close()
 
-file_section_incr = 0
-invconv_logic.commit_headers()
-for input_file in input_files:
+# Check if script can be continued.
+if len(min_header_rows) == 0:
+    print("FE: No file contained valid headers", file=sys.stderr)
+    sys.exit(2)
+
+# Temp file list so that keys won't be deleted
+# in the dictionary being parsed.
+file_list = file_ws_dict.keys()
+
+for input_file in file_list:
+    is_file_used = False
+    for used_file_ws in min_header_rows:
+        used_file = used_file_ws[0]
+        if input_file == used_file:
+            is_file_used = True
+            break
+    if not is_file_used:
+        panic_handler.panic(
+            string.Template("$file contains no valid headers.").substitute(
+                file=input_file
+            )
+        )
+        del file_ws_dict[input_file]
+
+# Make sure file_list isn't accidently used.
+del file_list
+
+for input_file in file_ws_dict:
+    for ws_name in file_ws_dict[input_file]:
+        is_ws_used = False
+        for used_file_ws in min_header_rows:
+            used_file = used_file_ws[0]
+            used_ws = used_file_ws[1]
+            if input_file == used_file and ws_name == used_ws:
+                is_ws_used = True
+                break
+        if not is_ws_used:
+            panic_handler.panic(
+                f"{panic_handler.get_xlsx_id(input_file, ws_name)} contains no valid headers."
+            )
+            file_ws_dict[input_file].remove(ws_name)
+
+# Record all headers for remaining files and worksheets.
+xlsx_headers = {}
+for input_file in file_ws_dict:
     xlsx_file = load_workbook(
         input_file, read_only=True, keep_vba=False, data_only=True, keep_links=False
     )
-    for ws in xlsx_file.worksheets:
-        file_section_id = file_section_ids[file_section_incr]
-        invconv_logic.file_ws_init(file_section_id, max_cols[file_section_id])
+    for ws_name in file_ws_dict[input_file]:
+        xlsx_headers[(input_file, ws_name)] = {}
+        ws = xlsx_file[ws_name]
+        # These variables are used to keep
+        # track of if a valid string or int
+        # appears after a set of Nones in the
+        # header.
+        start_none = 0
+        valid_after_none = False
+        for row in ws.iter_rows(
+            min_row=min_header_rows[(input_file, ws_name)],
+            max_row=min_header_rows[(input_file, ws_name)],
+            min_col=ws.min_column,
+            max_col=max_cols[(input_file, ws_name)],
+            values_only=True,
+        ):
+            for index_cell in enumerate(row, 1):
+                index = index_cell[0]
+                cell = index_cell[1]
+                if cell is None:
+                    if start_none == 0:
+                        start_none = index
+                    print(
+                        f"Warning: Blank header #{str(index)} in {panic_handler.get_xlsx_id(input_file, ws_name)} will be ignored",
+                        file=sys.stderr,
+                    )
+                else:
+                    if start_none != 0 and not valid_after_none:
+                        valid_after_none = True
+                    xlsx_headers[(input_file, ws_name)][str(cell)] = index
+        if start_none and not valid_after_none:
+            before_none = start_none - 1
+            if before_none == 0:
+                panic_handler.panic(
+                    string.Template(
+                        "Attempted to reduce max column length from $col to 0 in $id"
+                    ).substitute(
+                        col=max_cols[(input_file, ws_name)],
+                        id=panic_handler.get_xlsx_id(input_file, ws_name),
+                    )
+                )
+            else:
+                print(
+                    string.Template(
+                        "Info: Reducing max_column length of $id from $cur_col to $new_col."
+                    ).substitute(
+                        id=panic_handler.get_xlsx_id(input_file, ws_name),
+                        cur_col=str(max_cols[(input_file, ws_name)]),
+                        new_col=str(before_none),
+                    ),
+                    file=sys.stderr,
+                )
+                max_cols[(input_file, ws_name)] = before_none
+    xlsx_file.close()
+
+# Figure out the proper mapping between Axelor CSV and xlsx.
+for input_file in file_ws_dict:
+    for ws_name in file_ws_dict[input_file]:
+        with open(map_file) as map_fptr:
+            common.map_dict[(input_file, ws_name)] = {}
+            axm_line = ""
+            while axm_line is not None:
+                axm_line = axm_parser.get_axm_data(
+                    map_fptr,
+                    input_file,
+                    ws_name,
+                    xlsx_headers[(input_file, ws_name)],
+                )
+                if axm_line is not None:
+                    for key in axm_line:
+                        common.map_dict[(input_file, ws_name)][key] = axm_line[key]
+
+# Convert xlsx to Axelor-compatible CSV.
+invconv_logic.commit_headers()
+for input_file in file_ws_dict:
+    xlsx_file = load_workbook(
+        input_file, read_only=True, keep_vba=False, data_only=True, keep_links=False
+    )
+    for ws_name in file_ws_dict[input_file]:
+        ws = xlsx_file[ws_name]
+        invconv_logic.file_ws_init(input_file, ws_name, max_cols[(input_file, ws_name)])
 
         # Use headers gathered earlier.
-        for index_xlsx_header in enumerate(xlsx_headers[file_section_id], 1):
-            header_index = index_xlsx_header[0]
-            xlsx_header = index_xlsx_header[1]
+        for xlsx_header in xlsx_headers[(input_file, ws_name)]:
+            header_index = xlsx_headers[(input_file, ws_name)][xlsx_header]
             invconv_logic.set_header_location(xlsx_header, header_index)
 
         # Don't need to start at header row.
-        starting_row = header_row[file_section_id] + 1
+        starting_row = min_header_rows[(input_file, ws_name)] + 1
         for row in ws.iter_rows(
             min_row=starting_row,
-            max_row=max_rows[file_section_id],
+            max_row=max_rows[(input_file, ws_name)],
             min_col=ws.min_column,
-            max_col=max_cols[file_section_id],
+            max_col=max_cols[(input_file, ws_name)],
             values_only=True,
         ):
             for index_cell in enumerate(row, 1):
                 cell_index = index_cell[0]
                 cell = index_cell[1]
                 invconv_logic.main(cell)
-        file_section_incr += 1
     xlsx_file.close()

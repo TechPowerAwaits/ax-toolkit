@@ -1,4 +1,11 @@
+# Copyright 2021 Richard Johnston <techpowerawaits@outlook.com>
+# SPDX-license-identifier: 0BSD
+
 import sys
+
+# Usually used within error or warning messages.
+def get_xlsx_id(filepath, ws_name):
+    return filepath + " WS: " + str(ws_name)
 
 
 def panic(issue_str):
