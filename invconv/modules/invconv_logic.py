@@ -2,6 +2,7 @@
 # SPDX-license-identifier: 0BSD
 
 from modules import common
+from modules import panic_handler
 import csv
 import string
 import sys
@@ -92,8 +93,8 @@ def get_name(name):
     if name in used_product_names:
         print(
             string.Template(
-                "Warning: Product name $name in $id has already been defined"
-            ).substitute(name=name, id=file_section_id),
+                "Warning: Product name $name has already been defined in $id"
+            ).substitute(name=name, id=panic_handler.get_xlsx_id(input_file, ws_name)),
             file=sys.stderr,
         )
     return name
@@ -237,7 +238,8 @@ csv_row = {}
 
 # Columns start at 1.
 col_incr = 1
-file_section_id = ""
+input_file = ""
+ws_name = ""
 max_col = 0
 xlsx_header_location = {}
 # header_location is the same as xlsx_header_location
@@ -247,19 +249,21 @@ header_location = {}
 used_product_names = []
 
 
-def file_ws_init(file_ws_id, local_max_col):
-    global file_section_id
+def file_ws_init(local_file, local_ws, local_max_col):
+    global input_file
+    global ws_name
     global max_col
     global col_incr
     global xlsx_header_location
     global header_location
-    file_section_id = file_ws_id
+    input_file = local_file
+    ws_name = local_ws
     max_col = local_max_col
     col_incr = 1
     xlsx_header_location.clear()
     header_location.clear()
     for used_column in CSV_FUNCTION_MAP:
-        if used_column not in common.map_dict[file_section_id]:
+        if used_column not in common.map_dict[(input_file, ws_name)]:
             print(
                 f"Warning: column {used_column} is in map file, but is not handled",
                 file=sys.stderr,
@@ -277,14 +281,14 @@ def set_header_location(key, val):
                 col=key,
                 col_pos=str(val),
                 prev_col_pos=str(xlsx_header_location[key]),
-                id=file_section_id,
+                id=panic_handler.get_xlsx_id(input_file, ws_name),
             ),
             file=sys.stderr,
         )
-    elif key not in common.map_dict[file_section_id].values():
+    elif key not in common.map_dict[(input_file, ws_name)].values():
         print(
             string.Template("Warning: column $col from $id will be ignored").substitute(
-                col=key, id=file_section_id
+                col=key, id=panic_handler.get_xlsx_id(input_file, ws_name)
             ),
             file=sys.stderr,
         )
@@ -292,8 +296,8 @@ def set_header_location(key, val):
         xlsx_header_location[key] = val
         # Not all Axelor CSV columns are used, so it would be more
         # efficant to use common.map_dict.
-        for mapped_axelor_column in common.map_dict[file_section_id]:
-            if common.map_dict[file_section_id][mapped_axelor_column] == key:
+        for mapped_axelor_column in common.map_dict[(input_file, ws_name)]:
+            if common.map_dict[(input_file, ws_name)][mapped_axelor_column] == key:
                 header_location[mapped_axelor_column] = val
 
 
@@ -302,7 +306,10 @@ def main(val):
     global csv_row
     str_val = ""
     if val is None:
-        print(f"Warning: Cell in {file_section_id} is empty", file=sys.stderr)
+        print(
+            f"Warning: Cell in {panic_handler.get_xlsx_id(input_file, ws_name)} is empty",
+            file=sys.stderr,
+        )
     else:
         # Force val to be string.
         str_val = str(val)
