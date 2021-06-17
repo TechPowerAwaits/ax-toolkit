@@ -239,8 +239,8 @@ csv_row = {}
 col_incr = 1
 file_section_id = ""
 max_col = 0
-xslx_header_location = {}
-# header_location is the same as xslx_header_location
+xlsx_header_location = {}
+# header_location is the same as xlsx_header_location
 # except it uses the Axelor column names.
 header_location = {}
 
@@ -251,12 +251,12 @@ def file_ws_init(file_ws_id, local_max_col):
     global file_section_id
     global max_col
     global col_incr
-    global xslx_header_location
+    global xlsx_header_location
     global header_location
     file_section_id = file_ws_id
     max_col = local_max_col
     col_incr = 1
-    xslx_header_location.clear()
+    xlsx_header_location.clear()
     header_location.clear()
     for used_column in CSV_FUNCTION_MAP:
         if used_column not in common.map_dict[file_section_id]:
@@ -267,16 +267,16 @@ def file_ws_init(file_ws_id, local_max_col):
 
 
 def set_header_location(key, val):
-    global xslx_header_location
+    global xlsx_header_location
     global header_location
-    if key in xslx_header_location:
+    if key in xlsx_header_location:
         print(
             string.Template(
                 "Warning: column $col at position $col_pos is the same as at $prev_col_pos earlier in $id"
             ).substitute(
                 col=key,
                 col_pos=str(val),
-                prev_col_pos=str(xslx_header_location[key]),
+                prev_col_pos=str(xlsx_header_location[key]),
                 id=file_section_id,
             ),
             file=sys.stderr,
@@ -289,7 +289,7 @@ def set_header_location(key, val):
             file=sys.stderr,
         )
     else:
-        xslx_header_location[key] = val
+        xlsx_header_location[key] = val
         # Not all Axelor CSV columns are used, so it would be more
         # efficant to use common.map_dict.
         for mapped_axelor_column in common.map_dict[file_section_id]:
