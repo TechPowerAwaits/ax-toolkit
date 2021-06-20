@@ -1,8 +1,8 @@
 # Copyright 2021 Richard Johnston <techpowerawaits@outlook.com>
 # SPDX-license-identifier: 0BSD
 from modules import invconv_ini
+from modules import msg_handler
 import string
-import sys
 
 axelor_family_shorthand = {}
 axelor_product_categories = {}
@@ -42,14 +42,11 @@ def init(fptr):
 
     data_format_version = data_parser.getint("INFO", "INVCONV_FORMAT")
     if data_format_version != SUPPORTED_FORMAT_VER:
-        print(
+        msg_handler.error(
             string.Template(
                 "FE: Data format version $format_ver is unsupported"
-            ).substitute(format_ver=data_format_version),
-            data_format_version,
-            file=sys.stderr,
+            ).substitute(format_ver=data_format_version)
         )
-        sys.exit(1)
     for key in data_parser["AXELOR_PRODUCT_CATEGORIES"]:
         axelor_product_categories[key] = int(
             data_parser["AXELOR_PRODUCT_CATEGORIES"][key]

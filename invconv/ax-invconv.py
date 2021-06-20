@@ -4,14 +4,16 @@
 import argparse
 from openpyxl import load_workbook
 import os.path
+import progress.bar
 import string
 import sys
 
 # Import invconv-specific modules
 from modules import axm_parser
+from modules import cell_loc
 from modules import common
 from modules import invconv_logic
-from modules import panic_handler
+from modules import msg_handler
 
 ver_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "VERSION")
 with open(ver_path, "r") as version_file:
@@ -93,7 +95,7 @@ for input_file in input_files:
     )
     xlsx_ws_list = xlsx_file.sheetnames
     for ws_name in xlsx_ws_list:
-        xlsx_id = panic_handler.get_xlsx_id(input_file, ws_name)
+        xlsx_id = msg_handler.get_xlsx_id(input_file, ws_name)
         file_ws_dict[input_file] += [ws_name]
         ws = xlsx_file[ws_name]
 
@@ -106,29 +108,21 @@ for input_file in input_files:
         while (not isinstance(max_row, int)) or (max_row <= 0):
             try:
                 max_row = int(
-                    panic_handler.user_input(
+                    msg_handler.panic_user_input(
                         f"Max row for {xlsx_id} is {str(max_row)}.",
                         "Please provide the number of rows (starting at 1)",
                     )
                 )
             except (ValueError, TypeError):
-                print(
-                    type_val_err_msg,
-                    end="",
-                    file=sys.stderr,
-                )
+                print(type_val_err_msg, end="", file=sys.stderr)
                 max_row = None
             if (isinstance(max_row, int)) and (max_row <= 0):
-                print(
-                    less_than_one_msg,
-                    end="",
-                    file=sys.stderr,
-                )
+                print(less_than_one_msg, end="", file=sys.stderr)
         max_rows[(input_file, ws_name)] = max_row
         while (not isinstance(max_col, int)) or (max_col <= 0):
             try:
                 max_col = int(
-                    panic_handler.user_input(
+                    msg_handler.panic_user_input(
                         f"Max col for {xlsx_id} is {str(max_col)}.",
                         "Please provide the number of columns (starting at 1)",
                     )
@@ -145,12 +139,6 @@ for input_file in input_files:
 # which needs to be avoided.
 min_header_rows = {}
 
-# A row with just a title would not fill up the entire
-# max_column. As a result, there would be None at either
-# the first or second position.
-start_title_col = 1
-end_title_col = 2
-
 # Find where headers are inside each worksheet.
 for input_file in file_ws_dict:
     xlsx_file = load_workbook(
@@ -158,47 +146,36 @@ for input_file in file_ws_dict:
     )
     for ws_name in file_ws_dict[input_file]:
         ws = xlsx_file[ws_name]
-        # Assume the first line is not title unless otherwise found out.
-        header_row = 1
+        header_row = 0
 
-        for row in ws.iter_rows(
-            min_row=ws.min_row,
-            max_row=max_rows[(input_file, ws_name)],
-            min_col=start_title_col,
-            max_col=end_title_col,
-            values_only=True,
-        ):
-            is_valid_header_row = True
-            for cell in row:
-                if cell is None:
-                    is_valid_header_row = False
-                    header_row += 1
-                    break
-            if is_valid_header_row:
+        for row in cell_loc.row_iter(max_rows[(input_file, ws_name)]):
+            row_str = str(row)
+            # A row with just a title would not fill up the entire max_column.
+            # As a result, there would be None at either the first or second
+            # position.
+            cell1 = ws["A" + row_str].value
+            cell2 = ws["B" + row_str].value
+            if cell1 is not None and cell2 is not None:
+                header_row = row
                 break
+
         # Only add to min_header_row if the header was found
         # and is not the only thing in object.
         if header_row < max_rows[(input_file, ws_name)]:
             # Check if there are only empty rows after header.
             post_header = header_row + 1
-            row_list = []
-            for row in ws.iter_rows(
-                min_row=post_header,
-                max_row=post_header,
-                min_col=ws.min_column,
-                max_col=max_cols[(input_file, ws_name)],
-                values_only=True,
-            ):
-                for cell in row:
-                    row_list += [str(cell)]
-            if row_list.count("None") != len(row_list):
+            post_header_list = []
+            for col_incr in cell_loc.col_iter(max_cols[(input_file, ws_name)]):
+                col_letter = cell_loc.get_col_letter(col_incr)
+                row_str = str(post_header)
+                post_header_list += str(ws[col_letter + row_str].value)
+            if post_header_list.count("None") != len(post_header_list):
                 min_header_rows[(input_file, ws_name)] = header_row
     xlsx_file.close()
 
 # Check if script can be continued.
 if len(min_header_rows) == 0:
-    print("FE: No file contained valid headers", file=sys.stderr)
-    sys.exit(2)
+    msg_handler.error("No file contained valid headers.")
 
 # Temp file list so that keys won't be deleted
 # in the dictionary being parsed.
@@ -212,7 +189,7 @@ for input_file in file_list:
             is_file_used = True
             break
     if not is_file_used:
-        panic_handler.panic(
+        msg_handler.panic(
             string.Template("$file contains no valid headers.").substitute(
                 file=input_file
             )
@@ -232,8 +209,8 @@ for input_file in file_ws_dict:
                 is_ws_used = True
                 break
         if not is_ws_used:
-            panic_handler.panic(
-                f"{panic_handler.get_xlsx_id(input_file, ws_name)} contains no valid headers."
+            msg_handler.panic(
+                f"{msg_handler.get_xlsx_id(input_file, ws_name)} contains no valid headers."
             )
             file_ws_dict[input_file].remove(ws_name)
 
@@ -252,48 +229,45 @@ for input_file in file_ws_dict:
         # header.
         start_none = 0
         valid_after_none = False
-        for row in ws.iter_rows(
-            min_row=min_header_rows[(input_file, ws_name)],
-            max_row=min_header_rows[(input_file, ws_name)],
-            min_col=ws.min_column,
-            max_col=max_cols[(input_file, ws_name)],
-            values_only=True,
-        ):
-            for index_cell in enumerate(row, 1):
-                index = index_cell[0]
-                cell = index_cell[1]
-                if cell is None:
-                    if start_none == 0:
-                        start_none = index
-                    print(
-                        f"Warning: Blank header #{str(index)} in {panic_handler.get_xlsx_id(input_file, ws_name)} will be ignored",
-                        file=sys.stderr,
-                    )
-                else:
-                    if start_none != 0 and not valid_after_none:
-                        valid_after_none = True
-                    xlsx_headers[(input_file, ws_name)][str(cell)] = index
-        if start_none and not valid_after_none:
+        for col_incr in cell_loc.col_iter(max_cols[(input_file, ws_name)]):
+            col_letter = cell_loc.get_col_letter(col_incr)
+            row_str = str(min_header_rows[(input_file, ws_name)])
+            cell = ws[col_letter + row_str].value
+
+            if cell is None:
+                if start_none == 0:
+                    start_none = col_incr
+                msg_handler.warning(
+                    f"Blank header {col_letter+row_str} in {msg_handler.get_xlsx_id(input_file,ws_name)} will be ignored."
+                )
+            else:
+                if start_none != 0 and not valid_after_none:
+                    valid_after_none = True
+                xlsx_headers[(input_file, ws_name)][str(cell)] = col_incr
+        if start_none > 0 and not valid_after_none:
             before_none = start_none - 1
             if before_none == 0:
-                panic_handler.panic(
+                msg_handler.panic(
                     string.Template(
-                        "Attempted to reduce max column length from $col to 0 in $id"
+                        "Attempted to reduce max column length of $id from $col to 0 due to None in $cell_loc."
                     ).substitute(
                         col=max_cols[(input_file, ws_name)],
-                        id=panic_handler.get_xlsx_id(input_file, ws_name),
+                        id=msg_handler.get_xlsx_id(input_file, ws_name),
+                        cell_loc=cell_loc.get_col_letter(start_none)
+                        + str(min_header_rows[(input_file, ws_name)]),
                     )
                 )
             else:
-                print(
+                msg_handler.info(
                     string.Template(
-                        "Info: Reducing max_column length of $id from $cur_col to $new_col."
+                        "Reducing max column length of $id from $cur_col to $new_col due to None in $cell_loc."
                     ).substitute(
-                        id=panic_handler.get_xlsx_id(input_file, ws_name),
+                        id=msg_handler.get_xlsx_id(input_file, ws_name),
                         cur_col=str(max_cols[(input_file, ws_name)]),
                         new_col=str(before_none),
-                    ),
-                    file=sys.stderr,
+                        cell_loc=cell_loc.get_col_letter(start_none)
+                        + str(min_header_rows[(input_file, ws_name)]),
+                    )
                 )
                 max_cols[(input_file, ws_name)] = before_none
     xlsx_file.close()
@@ -315,34 +289,56 @@ for input_file in file_ws_dict:
                     for key in axm_line:
                         common.map_dict[(input_file, ws_name)][key] = axm_line[key]
 
+# Setup progress bar.
+max_oper = 0
+for input_file in file_ws_dict:
+    for ws_name in file_ws_dict[input_file]:
+        # xlsx file parsing will start one row after header.
+        net_row = (
+            max_rows[(input_file, ws_name)] - min_header_rows[(input_file, ws_name)]
+        )
+        max_cells = net_row * max_cols[(input_file, ws_name)]
+        max_oper += max_cells
+
 # Convert xlsx to Axelor-compatible CSV.
 invconv_logic.commit_headers()
-for input_file in file_ws_dict:
-    xlsx_file = load_workbook(
-        input_file, read_only=True, keep_vba=False, data_only=True, keep_links=False
-    )
-    for ws_name in file_ws_dict[input_file]:
-        ws = xlsx_file[ws_name]
-        invconv_logic.file_ws_init(input_file, ws_name, max_cols[(input_file, ws_name)])
+with progress.bar.IncrementalBar(
+    message="Generating output",
+    max=max_oper,
+    suffix="%(index)d/%(max)d ETA: %(eta_td)s",
+) as progress_bar:
+    for input_file in file_ws_dict:
+        xlsx_file = load_workbook(
+            input_file, read_only=True, keep_vba=False, data_only=True, keep_links=False
+        )
+        for ws_name in file_ws_dict[input_file]:
+            ws = xlsx_file[ws_name]
+            invconv_logic.file_ws_init(
+                input_file, ws_name, max_cols[(input_file, ws_name)]
+            )
 
-        # Use headers gathered earlier.
-        for xlsx_header in xlsx_headers[(input_file, ws_name)]:
-            header_index = xlsx_headers[(input_file, ws_name)][xlsx_header]
-            invconv_logic.set_header_location(xlsx_header, header_index)
+            # Use headers gathered earlier.
+            for xlsx_header in xlsx_headers[(input_file, ws_name)]:
+                header_index = xlsx_headers[(input_file, ws_name)][xlsx_header]
+                invconv_logic.set_header_location(xlsx_header, header_index)
 
-        # Don't need to start at header row.
-        starting_row = min_header_rows[(input_file, ws_name)] + 1
-        for row in ws.iter_rows(
-            min_row=starting_row,
-            max_row=max_rows[(input_file, ws_name)],
-            min_col=ws.min_column,
-            max_col=max_cols[(input_file, ws_name)],
-            values_only=True,
-        ):
-            for index_cell in enumerate(row, 1):
-                cell_index = index_cell[0]
-                cell = index_cell[1]
-                if cell == "#REF!":
-                    cell = "unknown"
-                invconv_logic.main(cell)
-    xlsx_file.close()
+            # Don't need to start at header row.
+            starting_row = min_header_rows[(input_file, ws_name)] + 1
+            for row in cell_loc.row_iter(starting_row, max_rows[(input_file, ws_name)]):
+                row_str = str(row)
+                for col in cell_loc.col_iter(max_cols[(input_file, ws_name)]):
+                    col_letter = cell_loc.get_col_letter(col)
+                    cell = ws[col_letter + row_str].value
+                    if cell == "#REF!":
+                        msg_handler.warning(
+                            string.Template(
+                                'Unknown reference found at $cell_loc in $id. Defaulting to "unknown".'
+                            ).substitute(
+                                cell_loc=col_letter + row_str,
+                                id=msg_handler.get_xlsx_id(input_file, ws_name),
+                            )
+                        )
+                        cell = "unknown"
+                    invconv_logic.main(cell)
+                    progress_bar.next()
+        xlsx_file.close()

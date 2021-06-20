@@ -2,9 +2,8 @@
 # SPDX-license-identifier: 0BSD
 
 from modules import common
-from modules import panic_handler
+from modules import msg_handler
 import string
-import sys
 
 
 def get_axm_data(axm_fptr, input_file, ws_name, input_columns):
@@ -27,16 +26,12 @@ def get_axm_data(axm_fptr, input_file, ws_name, input_columns):
         if not len(valid_input_col) == 0:
             axm_dict[dict_key_map[0]] = valid_input_col
         else:
-            print(
-                string.Template(
-                    "FE: $header cannot be set from data in $id"
-                ).substitute(
+            msg_handler.error(
+                string.Template("$header cannot be set from data in $id.").substitute(
                     header=dict_key_map[0],
-                    id=panic_handler.get_xlsx_id(input_file, ws_name),
-                ),
-                file=sys.stderr,
+                    id=msg_handler.get_xlsx_id(input_file, ws_name),
+                )
             )
-            sys.exit(1)
     elif ">" in line:
         dict_key_equiv = line.split(">")
         if dict_key_equiv[1] in common.map_dict[(input_file, ws_name)]:
@@ -44,17 +39,15 @@ def get_axm_data(axm_fptr, input_file, ws_name, input_columns):
                 dict_key_equiv[1]
             ]
         else:
-            print(
+            msg_handler.error(
                 string.Template(
-                    "FE: Can't set $header to the value in $target with data from $id"
+                    "Can't set $header to the value in $target with data from $id."
                 ).substitute(
                     header=dict_key_equiv[0],
                     target=dict_key_equiv[1],
-                    id=panic_handler.get_xlsx_id(input_file, ws_name),
-                ),
-                file=sys.stderr,
+                    id=msg_handler.get_xlsx_id(input_file, ws_name),
+                )
             )
-            sys.exit(1)
     else:
         return None
     return axm_dict
