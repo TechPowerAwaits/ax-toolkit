@@ -305,12 +305,7 @@ def main(val):
     global col_incr
     global csv_row
     str_val = ""
-    if val is None:
-        print(
-            f"Warning: Cell in {panic_handler.get_xlsx_id(input_file, ws_name)} is empty",
-            file=sys.stderr,
-        )
-    else:
+    if val is not None:
         # Force val to be string.
         str_val = str(val)
     for header in header_location:
