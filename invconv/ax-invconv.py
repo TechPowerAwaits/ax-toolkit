@@ -342,5 +342,7 @@ for input_file in file_ws_dict:
             for index_cell in enumerate(row, 1):
                 cell_index = index_cell[0]
                 cell = index_cell[1]
+                if cell == "#REF!":
+                    cell = "unknown"
                 invconv_logic.main(cell)
     xlsx_file.close()
