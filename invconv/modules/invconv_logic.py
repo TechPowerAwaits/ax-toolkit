@@ -2,7 +2,7 @@
 # SPDX-license-identifier: 0BSD
 
 from modules import common
-from modules import panic_handler
+from modules import msg_handler
 import csv
 import string
 import sys
@@ -91,11 +91,10 @@ def find_unit_shorthand(haystack, needle):
 def get_name(name):
     global used_product_names
     if name in used_product_names:
-        print(
+        msg_handler.warning(
             string.Template(
-                "Warning: Product name $name has already been defined in $id"
-            ).substitute(name=name, id=panic_handler.get_xlsx_id(input_file, ws_name)),
-            file=sys.stderr,
+                "Product name $name has already been defined in $id."
+            ).substitute(name=name, id=msg_handler.get_xlsx_id(input_file, ws_name)),
         )
     return name
 
@@ -264,9 +263,8 @@ def file_ws_init(local_file, local_ws, local_max_col):
     header_location.clear()
     for used_column in CSV_FUNCTION_MAP:
         if used_column not in common.map_dict[(input_file, ws_name)]:
-            print(
-                f"Warning: column {used_column} is in map file, but is not handled",
-                file=sys.stderr,
+            msg_handler.warning(
+                f"column {used_column} is in map file, but is not handled."
             )
 
 
@@ -274,23 +272,21 @@ def set_header_location(key, val):
     global xlsx_header_location
     global header_location
     if key in xlsx_header_location:
-        print(
+        msg_handler.warning(
             string.Template(
-                "Warning: column $col at position $col_pos is the same as at $prev_col_pos earlier in $id"
+                "column $col at position $col_pos is the same as at $prev_col_pos earlier in $id."
             ).substitute(
                 col=key,
                 col_pos=str(val),
                 prev_col_pos=str(xlsx_header_location[key]),
-                id=panic_handler.get_xlsx_id(input_file, ws_name),
-            ),
-            file=sys.stderr,
+                id=msg_handler.get_xlsx_id(input_file, ws_name),
+            )
         )
     elif key not in common.map_dict[(input_file, ws_name)].values():
-        print(
-            string.Template("Warning: column $col from $id will be ignored").substitute(
-                col=key, id=panic_handler.get_xlsx_id(input_file, ws_name)
-            ),
-            file=sys.stderr,
+        msg_handler.warning(
+            string.Template("column $col from $id will be ignored.").substitute(
+                col=key, id=msg_handler.get_xlsx_id(input_file, ws_name)
+            )
         )
     else:
         xlsx_header_location[key] = val
