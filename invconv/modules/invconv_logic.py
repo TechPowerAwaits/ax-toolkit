@@ -332,10 +332,16 @@ def commit_headers():
     csv_out.writerow(AXELOR_CSV_COLUMNS)
 
 
+import_id_incr = 0
+
+
 def commit_row():
     global csv_row
-    # Handle special case.
+    global import_id_incr
+    # Handle special cases.
     csv_row["fullName"] = "[" + csv_row["code"] + "] " + csv_row["name"]
+    import_id_incr += 1
+    csv_row["importId"] = import_id_incr
 
     # Make sure all undefined columns are blank.
     for ax_column in AXELOR_CSV_COLUMNS:
