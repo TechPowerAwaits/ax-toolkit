@@ -144,7 +144,7 @@ def get_cat_id(cell_val):
 code_incr = {}
 
 
-def get_code(cell_val):
+def gen_code(cell_val):
     code = ""
     cat_id = get_cat_id(cell_val)
     cat = ""
@@ -188,6 +188,20 @@ def get_code(cell_val):
         code_incr[key] = "0" + "0" + str(code_incr_int)
     else:
         code_incr[key] = "0" + "0" + "0" + str(code_incr_int)
+    return code
+
+
+def get_code(cell_val):
+    # When the force-custom-code
+    # argument has been passed,
+    # check if a "code" header exists.
+    code = ""
+    if common.force_custom_code:
+        for col_name in xlsx_header_location:
+            if col_name.upper() == "CODE":
+                code = cell_val
+    if len(code) == 0:
+        code = gen_code(cell_val)
     return code
 
 

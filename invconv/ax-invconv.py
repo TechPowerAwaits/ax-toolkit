@@ -70,6 +70,11 @@ parser.add_argument(
     default=common.fallback_unit,
     help="Fallback unit to place in output",
 )
+parser.add_argument(
+    "--force-custom-code",
+    action="store_true",
+    help='Use custom code "as is" from input files',
+)
 parser.add_argument("input", nargs="+", help="Input file(s)")
 parser_args = parser.parse_args()
 input_files = parser_args.input
@@ -78,6 +83,7 @@ common.fallback_category = parser_args.category
 common.fallback_family = parser_args.family
 common.fallback_type = parser_args.Type
 common.fallback_unit = parser_args.unit
+common.force_custom_code = parser_args.force_custom_code
 
 # On some xlsx files, the max_row and max_col
 # cannot be read.
