@@ -9,6 +9,7 @@ import string
 def get_axm_data(axm_fptr, input_file, ws_name, input_columns):
     axm_dict = {}
     line = axm_fptr.readline().replace("\n", " ").replace(" ", "")
+    line = line.replace("%20", " ")
     if ":" in line:
         dict_key_map = line.split(":")
         dict_val = dict_key_map[1].split(",")
