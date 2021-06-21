@@ -19,6 +19,7 @@ fallback_unit = ""
 
 # Mapping between Axelor columns and input columns.
 map_dict = {}
+force_custom_code = False
 
 SUPPORTED_FORMAT_VER = 1
 
