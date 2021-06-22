@@ -6,7 +6,7 @@ from openpyxl import load_workbook
 import os.path
 import progress.bar
 import string
-import sys
+import time
 
 # Import invconv-specific modules
 from modules import axm_parser
@@ -30,6 +30,12 @@ with open(data_file) as data_fptr:
     common.init(data_fptr)
 
 parser.add_argument("-m", "--map-file", default="default.axm", help="AXM map file")
+parser.add_argument(
+    "-l",
+    "--log-file",
+    default=f"invconv-{time.strftime('%m-%d-%Y_%H-%M-%S')}.log",
+    help="File to store messages",
+)
 parser.add_argument(
     "-h", "--help", action="help", help="show this help message and exit"
 )
@@ -79,6 +85,7 @@ parser.add_argument("input", nargs="+", help="Input file(s)")
 parser_args = parser.parse_args()
 input_files = parser_args.input
 map_file = parser_args.map_file
+msg_handler.log_file = parser_args.log_file
 common.fallback_category = parser_args.category
 common.fallback_family = parser_args.family
 common.fallback_type = parser_args.Type
@@ -107,10 +114,8 @@ for input_file in input_files:
 
         max_row = ws.max_row
         max_col = ws.max_column
-        type_val_err_msg = "Provided value was invalid. Setting variable to None."
-        less_than_one_msg = (
-            "Provided numerical value was invalid. Counting should start at one."
-        )
+        type_val_err_msg = "Setting variable to None."
+        less_than_one_msg = "Counting should start at one."
         while (not isinstance(max_row, int)) or (max_row <= 0):
             try:
                 max_row = int(
@@ -120,10 +125,10 @@ for input_file in input_files:
                     )
                 )
             except (ValueError, TypeError):
-                print(type_val_err_msg, end="", file=sys.stderr)
+                msg_handler.input_fail(type_val_err_msg)
                 max_row = None
             if (isinstance(max_row, int)) and (max_row <= 0):
-                print(less_than_one_msg, end="", file=sys.stderr)
+                msg_handler.input_fail(less_than_one_msg)
         max_rows[(input_file, ws_name)] = max_row
         while (not isinstance(max_col, int)) or (max_col <= 0):
             try:
@@ -134,10 +139,10 @@ for input_file in input_files:
                     )
                 )
             except (ValueError, TypeError):
-                print(type_val_err_msg, end="", file=sys.stderr)
+                msg_handler.input_fail(type_val_err_msg)
                 max_col = None
             if (isinstance(max_col, int)) and (max_col <= 0):
-                print(less_than_one_msg, end="", file=sys.stderr)
+                msg_handler.input_fail(less_than_one_msg)
         max_cols[(input_file, ws_name)] = max_col
     xlsx_file.close()
 
