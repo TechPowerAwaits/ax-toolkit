@@ -232,6 +232,26 @@ def get_unit(cell_val):
     return unit_id
 
 
+def get_price(cell_val):
+    price_str = ""
+    price = 0.00
+    for char in cell_val:
+        if char in string.digits or char == ".":
+            price_str += char
+    # price_str could be empty or just contain dots
+    # depending on the value in the cell.
+    highest_index = len(price_str) - 1
+    if len(price_str) == 0 or price_str.rfind(".") == highest_index:
+        msg_handler.warning(
+            string.Template(
+                "Cell in $id has $val and not cost. Defaulting to 0.00."
+            ).substitute(id=msg_handler.get_xlsx_id(input_file, ws_name), val=cell_val)
+        )
+        price_str = "0.00"
+    price = float(price_str)
+    return price
+
+
 # This maps AXELOR_CSV_COLUMN names to
 # functions that will return a valid value
 # to be placed in a string.
@@ -245,6 +265,8 @@ CSV_FUNCTION_MAP = {
     "productTypeSelect": get_product_type,
     "salesUnit_importId": get_unit,
     "purchasesUnit_importId": get_unit,
+    "salePrice": get_price,
+    "purchasePrice": get_price,
 }
 
 csv_row = {}
