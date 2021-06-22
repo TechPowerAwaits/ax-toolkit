@@ -1,7 +1,14 @@
 # Copyright 2021 Richard Johnston <techpowerawaits@outlook.com>
 # SPDX-license-identifier: 0BSD
 
+import string
 import sys
+
+# Log file is defined here so that a file pointer
+# can repeatedly be created and destroyed. This is needed
+# because if the script crashes, the file won't be properly
+# closed otherwise.
+log_file = ""
 
 
 def error(error_str):
@@ -9,6 +16,8 @@ def error(error_str):
     FATAL_CODE = 2
     print("\n\n\nFatal Error!!!\n\n", end="", file=sys.stderr)
     print(error_str, end="", file=sys.stderr)
+    with open(log_file, "a") as log_fptr:
+        print(f"FE: {error_str}", file=log_fptr)
     sys.exit(FATAL_CODE)
 
 
@@ -18,7 +27,14 @@ def get_xlsx_id(filepath, ws_name):
 
 
 def info(info_str):
-    print(f"Info: {info_str}", file=sys.stderr)
+    with open(log_file, "a") as log_fptr:
+        print(f"Info: {info_str}", file=log_fptr)
+
+
+def input_fail(fail_str):
+    print(f"Input invalid: {fail_str}.", end="", file=sys.stderr)
+    with open(log_file, "a") as log_fptr:
+        print(f"Input invalid: {fail_str}.", file=log_fptr)
 
 
 def panic(issue_str):
@@ -32,6 +48,8 @@ def panic(issue_str):
         incr += 1
     print("\n\n", end="", file=sys.stderr)
     print(issue_str, file=sys.stderr)
+    with open(log_file, "a") as log_fptr:
+        print(f"Panic: {issue_str}", file=log_fptr)
 
     print("Do you want to terminate the script? [y/n] > ", end="", file=sys.stderr)
     response = input()
@@ -45,8 +63,14 @@ def panic_user_input(issue_str, user_prompt):
     print(user_prompt + " > ", end="", file=sys.stderr)
     user_input = input()
     print("\n", end="", file=sys.stderr)
+    with open(log_file, "a") as log_fptr:
+        print(
+            string.Template("Panic Response: $input").substitute(input=user_input),
+            file=log_fptr,
+        )
     return user_input
 
 
 def warning(warn_str):
-    print(f"Warning: {warn_str}", file=sys.stderr)
+    with open(log_file, "a") as log_fptr:
+        print(f"Warning: {warn_str}", file=log_fptr)
