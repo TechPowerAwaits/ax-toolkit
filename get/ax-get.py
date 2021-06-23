@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Copyright 2021 Richard Johnston <techpowerawaits@outlook.com>
 # SPDX-license-identifier: 0BSD
 
@@ -13,9 +15,7 @@ import zipfile
 
 PAUSE_SECONDS = 3
 
-current_path = os.path.dirname(__file__)
-parent_path = os.path.dirname(current_path)
-ver_path = os.path.join(parent_path, "VERSION")
+ver_path = os.path.join(os.path.pardir, "VERSION")
 with open(ver_path, "r") as version_file:
     ver_str = version_file.readline()
 
@@ -93,7 +93,7 @@ if is_src:
             opensuite_src_fp.write(content)
     with zipfile.ZipFile(opensuite_src_zip_name, "r") as opensuite_src_zip:
         opensuite_src_dest = os.path.join(
-            current_path, openwebapp_src_folder_name, "modules", "axelor-open-suite"
+            openwebapp_src_folder_name, "modules", "axelor-open-suite"
         )
         opensuite_src_zip.extractall(os.path.dirname(opensuite_src_dest))
         if os.path.exists(opensuite_src_dest):

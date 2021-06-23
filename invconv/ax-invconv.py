@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Copyright 2021 Richard Johnston <techpowerawaits@outlook.com>
 # SPDX-license-identifier: 0BSD
 
@@ -15,7 +17,7 @@ from modules import common
 from modules import invconv_logic
 from modules import msg_handler
 
-ver_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "VERSION")
+ver_path = os.path.join(os.path.pardir, "VERSION")
 with open(ver_path, "r") as version_file:
     ver_str = version_file.readline()
 
