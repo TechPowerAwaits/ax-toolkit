@@ -198,10 +198,13 @@ def get_code(cell_val):
 def get_product_type(cell_val):
     prod_type = ""
     for product_type in common.axelor_product_types:
-        if product_type in cell_val:
-            prod_type = product_type
+        if (
+            product_type in cell_val
+            or common.axelor_product_types[product_type] in cell_val
+        ):
+            prod_type = common.axelor_product_types[product_type]
     if len(prod_type) == 0:
-        prod_type = common.fallback_type
+        prod_type = common.axelor_product_types[common.fallback_type]
     return prod_type
 
 
