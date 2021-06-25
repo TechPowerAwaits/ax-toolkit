@@ -64,7 +64,7 @@ def find_unit_shorthand(haystack, needle):
                 haystack[index] in string.whitespace
             ):
                 found_int_or_space = True
-            elif found_int_or_space:
+            if found_int_or_space:
                 subsection = []
                 for incr in range(needle_len):
                     if index + incr < haystack_len:
@@ -82,6 +82,11 @@ def find_unit_shorthand(haystack, needle):
                         return True
                     if haystack[haystack_cur_pos] in string.whitespace:
                         return True
+                else:
+                    # Reset found_int_or_space so it doesn't keep on looking
+                    # for shorthand forms long after a number has been found,
+                    # thus leading to a false positive.
+                    found_int_or_space = False
             else:
                 pass
 
