@@ -2,7 +2,6 @@
 *.csv
 *.ini
 *.log
-__pycache__
 *.xlsx
 !default.axm
 !demo.ini
