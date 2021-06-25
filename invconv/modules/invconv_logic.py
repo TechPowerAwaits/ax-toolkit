@@ -7,34 +7,9 @@ import csv
 import string
 import sys
 
-AXELOR_CSV_COLUMNS = [
-    "procurementMethodSelect",
-    "purchasesUnit_importId",
-    "importId",
-    "productSubTypeSelect",
-    "purchaseCurrency_importId",
-    "productTypeSelect",
-    "salePrice",
-    "picture_importId",
-    "managPriceCoef",
-    "purchasePrice",
-    "defaultSupplierPartner_importId",
-    "internalDescription",
-    "salesUnit_importId",
-    "name",
-    "productFamily_importId",
-    "code",
-    "description",
-    "productCategory_importId",
-    "saleSupplySelect",
-    "fullName",
-    "saleCurrency_importId",
-]
-
-# A seperate function is required for finding unit
-# shorthands in strings, as some shorthand forms
-# can be one character long. Need to ensure it
-# is shortly after a number.
+# A seperate function is requied for units,
+# as some shorthand forms can be one character long.
+# Need to ensure it is shortly after a number.
 def find_unit_shorthand(haystack, needle):
     contain_num = False
     for digit in string.digits:
@@ -344,7 +319,7 @@ def main(val):
 
 def commit_headers():
     csv_out = csv.writer(sys.stdout, dialect="excel")
-    csv_out.writerow(AXELOR_CSV_COLUMNS)
+    csv_out.writerow(common.axelor_csv_columns)
 
 
 import_id_incr = 0
@@ -359,13 +334,13 @@ def commit_row():
     csv_row["importId"] = import_id_incr
 
     # Make sure all undefined columns are blank.
-    for ax_column in AXELOR_CSV_COLUMNS:
+    for ax_column in common.axelor_csv_columns:
         if ax_column not in csv_row:
             csv_row[ax_column] = ""
 
     # Enforce a consistant ordering.
     row_list = []
-    for ax_column in AXELOR_CSV_COLUMNS:
+    for ax_column in common.axelor_csv_columns:
         row_list += [csv_row[ax_column]]
 
     csv_out = csv.writer(sys.stdout, dialect="excel")
