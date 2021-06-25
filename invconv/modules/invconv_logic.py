@@ -31,25 +31,10 @@ AXELOR_CSV_COLUMNS = [
     "saleCurrency_importId",
 ]
 
-# Helper functions
-def find_shorthand(haystack, needle):
-    haystack_len = len(haystack)
-    needle_len = len(needle)
-    for index in range(haystack_len):
-        subsection = []
-        for incr in range(needle_len):
-            if index + incr < haystack_len:
-                subsection += haystack[index + incr]
-            else:
-                break
-        if subsection == needle:
-            return True
-    return False
-
-
-# A seperate function is requied for units,
-# as some shorthand forms can be one character long.
-# Need to ensure it is shortly after a number.
+# A seperate function is required for finding unit
+# shorthands in strings, as some shorthand forms
+# can be one character long. Need to ensure it
+# is shortly after a number.
 def find_unit_shorthand(haystack, needle):
     contain_num = False
     for digit in string.digits:
@@ -121,7 +106,7 @@ def get_fam_id(cell_val):
     if fam_id == -1:
         for prod_fam in common.axelor_family_shorthand:
             fam_short = common.axelor_family_shorthand[prod_fam]
-            if find_shorthand(cell_val, fam_short):
+            if fam_short in cell_val:
                 fam_id = common.axelor_product_families[prod_fam]
                 break
     if fam_id == -1:
@@ -138,7 +123,7 @@ def get_cat_id(cell_val):
     if cat_id == -1:
         for prod_cat in common.axelor_category_shorthand:
             cat_short = common.axelor_category_shorthand[prod_cat]
-            if find_shorthand(cell_val, cat_short):
+            if cat_short in cell_val:
                 cat_id = common.axelor_product_categories[cell_val]
                 break
     if cat_id == -1:
