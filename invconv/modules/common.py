@@ -8,7 +8,7 @@ axelor_family_shorthand = {}
 axelor_product_categories = {}
 axelor_category_shorthand = {}
 axelor_product_families = {}
-axelor_product_types = []
+axelor_product_types = {}
 axelor_units = {}
 axelor_units_shorthand = {}
 max_unit_shorthand = 0
@@ -21,7 +21,7 @@ fallback_unit = ""
 map_dict = {}
 force_custom_code = False
 
-SUPPORTED_FORMAT_VER = 1
+SUPPORTED_FORMAT_VER = 2
 
 
 def init(fptr):
@@ -45,7 +45,7 @@ def init(fptr):
     if data_format_version != SUPPORTED_FORMAT_VER:
         msg_handler.error(
             string.Template(
-                "FE: Data format version $format_ver is unsupported"
+                "Data format version $format_ver is unsupported."
             ).substitute(format_ver=data_format_version)
         )
     for key in data_parser["AXELOR_PRODUCT_CATEGORIES"]:
@@ -63,7 +63,7 @@ def init(fptr):
                 key
             ]
     for key in data_parser["AXELOR_PRODUCT_TYPES"]:
-        axelor_product_types += [key]
+        axelor_product_types[key] = data_parser["AXELOR_PRODUCT_TYPES"][key]
     for key in data_parser["AXELOR_UNITS"]:
         axelor_units[key] = data_parser["AXELOR_UNITS"][key]
         if key in data_parser["AXELOR_UNITS_ABREV"]:
