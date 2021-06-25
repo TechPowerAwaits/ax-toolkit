@@ -4,6 +4,8 @@ from modules import invconv_ini
 from modules import msg_handler
 import string
 
+axelor_csv_columns = {}
+
 axelor_family_shorthand = {}
 axelor_product_categories = {}
 axelor_category_shorthand = {}
@@ -21,13 +23,14 @@ fallback_unit = ""
 map_dict = {}
 force_custom_code = False
 
-SUPPORTED_FORMAT_VER = 2
+SUPPORTED_FORMAT_VER = 3
 
 
 def init(fptr):
     data_parser = invconv_ini.data_parser
     data_parser.read_file(fptr)
 
+    global axelor_csv_columns
     global axelor_family_shorthand
     global axelor_product_categories
     global axelor_category_shorthand
@@ -48,6 +51,10 @@ def init(fptr):
                 "Data format version $format_ver is unsupported."
             ).substitute(format_ver=data_format_version)
         )
+    axelor_csv_type = data_parser["INFO"]["TYPE"]
+    axcol_sect_name = string.Template("$type COLUMNS").substitute(type=axelor_csv_type)
+    for key in data_parser[axcol_sect_name]:
+        axelor_csv_columns[key] = data_parser[axcol_sect_name][key]
     for key in data_parser["AXELOR_PRODUCT_CATEGORIES"]:
         axelor_product_categories[key] = int(
             data_parser["AXELOR_PRODUCT_CATEGORIES"][key]
