@@ -301,9 +301,12 @@ for input_file in file_ws_dict:
                     ws_name,
                     xlsx_headers[(input_file, ws_name)],
                 )
-                if axm_line is not None:
-                    for key in axm_line:
-                        common.map_dict[(input_file, ws_name)][key] = axm_line[key]
+                # if one of the members of the tuple is None, that
+                # indicates that the entire line is a comment.
+                if isinstance(axm_line, tuple) and axm_line[0] is not None:
+                    ax_header = axm_line[0]
+                    input_header = axm_line[1]
+                    common.map_dict[(input_file, ws_name)][ax_header] = input_header
 
 # Setup progress bar.
 max_oper = 0
