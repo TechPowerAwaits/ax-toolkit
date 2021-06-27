@@ -293,17 +293,17 @@ for input_file in file_ws_dict:
     for ws_name in file_ws_dict[input_file]:
         with open(map_file) as map_fptr:
             common.map_dict[(input_file, ws_name)] = {}
-            axm_line = ""
-            while axm_line is not None:
+            while not axm_parser.is_eof(map_fptr):
                 axm_line = axm_parser.get_axm_data(
                     map_fptr,
                     input_file,
                     ws_name,
                     xlsx_headers[(input_file, ws_name)],
                 )
-                # if one of the members of the tuple is None, that
-                # indicates that the entire line is a comment.
-                if isinstance(axm_line, tuple) and axm_line[0] is not None:
+                # If one of the members of the tuple is None, that
+                # indicates that either an entire line is a comment,
+                # a blank line has been found, or EOF has been reached.
+                if axm_line[0] is not None:
                     ax_header = axm_line[0]
                     input_header = axm_line[1]
                     common.map_dict[(input_file, ws_name)][ax_header] = input_header

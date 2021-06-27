@@ -5,13 +5,37 @@ from modules import common
 from modules import msg_handler
 import string
 
+# Python does not have a function to check
+# if a file has reached EOF. This function works
+# by checking the stream position. If the position
+# stops increasing, it has reached EOF.
+stream_pos = None
+
+
+def is_eof(axm_fptr):
+    global stream_pos
+    cur_pos = axm_fptr.tell()
+    if stream_pos is None:
+        # Initialize stream_pos.
+        stream_pos = cur_pos
+    else:
+        if cur_pos == stream_pos:
+            return True
+    # Set stream_pos to cur_pos
+    # or face infinite loop.
+    stream_pos = cur_pos
+    return False
+
 
 def get_axm_data(axm_fptr, input_file, ws_name, input_columns):
-    # By default, returns None if nothing valid has been provided.
-    # Otherwise, it will return a tuple. The first member of the tuple
-    # is the Axelor column name while the second is the found
+    # By default, returns tuple where both values are None.
+    # This occurs if an entire line is a comment or EOF has
+    # been reached. It will also happen when there is a line
+    # break.
+    # Otherwise, the first member of the tuple will be the
+    # Axelor column name while the second will be a
     # header name in the input file that can be used.
-    axm_return = None
+    axm_return = (None, None)
     # Convert the new line char to a space to that it will be removed
     # when the whitespace at the beginning and at the end of the string
     # is stripped.
@@ -24,7 +48,6 @@ def get_axm_data(axm_fptr, input_file, ws_name, input_columns):
         # empty string in the first position
         # of the list.
         if line[0] == "":
-            axm_return = (None, None)
             line = ""
         else:
             # Should give the line minus any comments.
