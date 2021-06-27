@@ -52,6 +52,17 @@ def get_axm_data(axm_fptr, input_file, ws_name, input_columns):
         else:
             # Should give the line minus any comments.
             line = line[0]
+    # Certain mappings can be made optional (non-failing)
+    # by adding ~ to the front of the line.
+    msg_func = None
+    # Need to double check line is not blank;
+    # otherwise, check line[0] will lead to an
+    # exception.
+    if len(line) > 0 and line[0] == "~":
+        msg_func = msg_handler.info
+        line = line.removeprefix("~")
+    else:
+        msg_func = msg_handler.error
     if ":" in line:
         key_val_map = split_n_strip(line, ":")
         ax_header = key_val_map[0]
@@ -72,10 +83,9 @@ def get_axm_data(axm_fptr, input_file, ws_name, input_columns):
         if not len(valid_input_col) == 0:
             axm_return = (ax_header, valid_input_col)
         else:
-            msg_handler.error(
+            msg_func(
                 string.Template("$header cannot be set from data in $id.").substitute(
-                    header=ax_header,
-                    id=msg_handler.get_xlsx_id(input_file, ws_name),
+                    header=ax_header, id=msg_handler.get_xlsx_id(input_file, ws_name)
                 )
             )
     elif ">" in line:
@@ -85,7 +95,7 @@ def get_axm_data(axm_fptr, input_file, ws_name, input_columns):
         if key_equiv_map[1] in common.map_dict[(input_file, ws_name)]:
             axm_return = (key, common.map_dict[(input_file, ws_name)][source_key])
         else:
-            msg_handler.error(
+            msg_func(
                 string.Template(
                     "Can't set $header to the value in $target with data from $id."
                 ).substitute(
