@@ -308,6 +308,17 @@ for input_file in file_ws_dict:
                     input_header = axm_line[1]
                     common.map_dict[(input_file, ws_name)][ax_header] = input_header
 
+# Some mappings can be set as optional, so need to verify how many files/sections
+# are left.
+for input_file in file_ws_dict:
+    for ws_name in file_ws_dict[input_file]:
+        if len(common.map_dict[(input_file, ws_name)]) == 0:
+            file_ws_dict[input_file].remove(ws_name)
+    if len(file_ws_dict[input_file]) == 0:
+        msg_handler.panic(string.Template("$file does not have any valid mappings."))
+if len(file_ws_dict) == 0:
+    msg_handler.error("No file has valid mappings.")
+
 # Setup progress bar.
 max_oper = 0
 for input_file in file_ws_dict:
