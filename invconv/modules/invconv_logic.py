@@ -74,35 +74,39 @@ def get_intern_descript(intern_descript):
 
 def get_fam_id(cell_val):
     fam_id = -1
-    for prod_fam in common.axelor_product_families:
+    for prod_fam in common.meta_table["axelor_product_families"]:
         if prod_fam == cell_val:
-            fam_id = common.axelor_product_families[cell_val]
+            fam_id = common.meta_table["axelor_product_families"][cell_val]
             break
     if fam_id == -1:
-        for prod_fam in common.axelor_family_shorthand:
-            fam_short = common.axelor_family_shorthand[prod_fam]
+        for prod_fam in common.meta_table["axelor_product_families_abrev"]:
+            fam_short = common.meta_table["axelor_product_families_abrev"][prod_fam]
             if fam_short in cell_val:
-                fam_id = common.axelor_product_families[prod_fam]
+                fam_id = common.meta_table["axelor_product_families"][prod_fam]
                 break
     if fam_id == -1:
-        fam_id = common.axelor_product_families[common.fallback_family]
+        fam_id = common.meta_table["axelor_product_families"][
+            common.fallback["axelor_product_families"]
+        ]
     return fam_id
 
 
 def get_cat_id(cell_val):
     cat_id = -1
-    for prod_cat in common.axelor_product_categories:
+    for prod_cat in common.meta_table["axelor_product_categories"]:
         if cat_id == cell_val:
-            cat_id = common.axelor_product_categories[cell_val]
+            cat_id = common.meta_table["axelor_product_categories"][cell_val]
             break
     if cat_id == -1:
-        for prod_cat in common.axelor_category_shorthand:
-            cat_short = common.axelor_category_shorthand[prod_cat]
+        for prod_cat in common.meta_table["axelor_product_categories"]:
+            cat_short = common.meta_table["axelor_product_categories_abrev"][prod_cat]
             if cat_short in cell_val:
-                cat_id = common.axelor_product_categories[cell_val]
+                cat_id = common.meta_table["axelor_product_categories"][prod_cat]
                 break
     if cat_id == -1:
-        cat_id = common.axelor_product_categories[common.fallback_category]
+        cat_id = common.meta_table["axelor_product_categories"][
+            common.fallback["axelor_product_categories"]
+        ]
     return cat_id
 
 
@@ -117,17 +121,19 @@ def gen_code(cell_val):
     fam_id = get_fam_id(cell_val)
     fam_short = ""
     fam = ""
-    for category in common.axelor_product_categories:
-        if common.axelor_product_categories[category] == cat_id:
+    for category in common.meta_table["axelor_product_categories"]:
+        if common.meta_table["axelor_product_categories"][category] == cat_id:
             cat = category
-            cat_short = common.axelor_category_shorthand.get(cat, "")
+            cat_short = common.meta_table["axelor_product_categories_abrev"].get(
+                cat, ""
+            )
             break
-    for family in common.axelor_product_families:
-        if common.axelor_product_families[family] == fam_id:
+    for family in common.meta_table["axelor_product_families"]:
+        if common.meta_table["axelor_product_families"][family] == fam_id:
             fam = family
-            fam_short = common.axelor_family_shorthand.get(fam, "")
+            fam_short = common.meta_table["axelor_product_families_abrev"].get(fam, "")
             break
-    if cat == common.fallback_category:
+    if cat == common.fallback["axelor_product_categories"]:
         if len(fam_short) > 0:
             code = fam_short.upper().replace(" ", "_")
     else:
@@ -172,31 +178,34 @@ def get_code(cell_val):
 
 def get_product_type(cell_val):
     prod_type = ""
-    for product_type in common.axelor_product_types:
+    for product_type in common.meta_table["axelor_product_types"]:
         if (
             product_type in cell_val
-            or common.axelor_product_types[product_type] in cell_val
+            or common.meta_table["axelor_product_types"][product_type] in cell_val
         ):
-            prod_type = common.axelor_product_types[product_type]
+            prod_type = common.meta_table["axelor_product_types"][product_type]
+            break
     if len(prod_type) == 0:
-        prod_type = common.axelor_product_types[common.fallback_type]
+        prod_type = common.meta_table["axelor_product_types"][
+            common.fallback["axelor_product_types"]
+        ]
     return prod_type
 
 
 def get_unit(cell_val):
     unit = ""
-    for ax_unit in common.axelor_units:
+    for ax_unit in common.meta_table["axelor_units"]:
         if ax_unit in cell_val:
             unit = ax_unit
             break
-        if ax_unit in common.axelor_units_shorthand and find_unit_shorthand(
-            cell_val, common.axelor_units_shorthand[ax_unit]
+        if ax_unit in common.meta_table["axelor_units_abrev"] and find_unit_shorthand(
+            cell_val, common.meta_table["axelor_units_abrev"][ax_unit]
         ):
             unit = ax_unit
             break
     if len(unit) == 0:
-        unit = common.fallback_unit
-    unit_id = common.axelor_units[unit]
+        unit = common.fallback["axelor_units"]
+    unit_id = common.meta_table["axelor_units"][unit]
     return unit_id
 
 

@@ -56,29 +56,29 @@ parser.add_argument(
 parser.add_argument(
     "-c",
     "--category",
-    choices=common.axelor_product_categories,
-    default=common.fallback_category,
+    choices=common.meta_table["axelor_product_categories"],
+    default=common.fallback["axelor_product_categories"],
     help="Fallback product category to place in output",
 )
 parser.add_argument(
     "-f",
     "--family",
-    choices=common.axelor_product_families,
-    default=common.fallback_family,
+    choices=common.meta_table["axelor_product_families"],
+    default=common.fallback["axelor_product_families"],
     help="Fallback product family to place in output",
 )
 parser.add_argument(
     "-T",
     "--Type",
-    choices=common.axelor_product_types,
-    default=common.fallback_type,
+    choices=common.meta_table["axelor_product_types"],
+    default=common.fallback["axelor_product_types"],
     help="Fallback product type to place in output",
 )
 parser.add_argument(
     "-u",
     "--unit",
-    choices=common.axelor_units,
-    default=common.fallback_unit,
+    choices=common.meta_table["axelor_units"],
+    default=common.fallback["axelor_units"],
     help="Fallback unit to place in output",
 )
 parser.add_argument(
@@ -91,10 +91,10 @@ parser_args = parser.parse_args()
 input_files = parser_args.input
 map_file = parser_args.map_file
 msg_handler.log_file = parser_args.log_file
-common.fallback_category = parser_args.category
-common.fallback_family = parser_args.family
-common.fallback_type = parser_args.Type
-common.fallback_unit = parser_args.unit
+common.fallback["axelor_product_categories"] = parser_args.category
+common.fallback["axelor_product_families"] = parser_args.family
+common.fallback["axelor_product_types"] = parser_args.Type
+common.fallback["axelor_units"] = parser_args.unit
 common.force_custom_code = parser_args.force_custom_code
 
 # On some xlsx files, the max_row and max_col
