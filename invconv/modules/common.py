@@ -6,20 +6,14 @@ import string
 
 axelor_csv_columns = {}
 
-axelor_family_shorthand = {}
-axelor_product_categories = {}
-axelor_category_shorthand = {}
-axelor_product_families = {}
-axelor_product_types = {}
-axelor_units = {}
-axelor_units_shorthand = {}
-max_unit_shorthand = 0
-fallback_category = ""
-fallback_family = ""
-fallback_type = ""
-fallback_unit = ""
+# Uses a meta table so that more functionality
+# can be outside the script.
+meta_table = {}
+constants = {}
+fallback = {}
 
 # Mapping between Axelor columns and input columns.
+# Filled in by function in axm_parser.py.
 map_dict = {}
 force_custom_code = False
 
@@ -31,18 +25,9 @@ def init(fptr):
     data_parser.read_file(fptr)
 
     global axelor_csv_columns
-    global axelor_family_shorthand
-    global axelor_product_categories
-    global axelor_category_shorthand
-    global axelor_product_families
-    global axelor_product_types
-    global axelor_units
-    global axelor_units_shorthand
-    global max_unit_shorthand
-    global fallback_category
-    global fallback_family
-    global fallback_type
-    global fallback_unit
+    global constants
+    global fallback
+    global meta_table
 
     data_format_version = data_parser.getint("INFO", "INVCONV_FORMAT")
     if data_format_version != SUPPORTED_FORMAT_VER:
@@ -55,28 +40,24 @@ def init(fptr):
     axcol_sect_name = string.Template("$type COLUMNS").substitute(type=axelor_csv_type)
     for key in data_parser[axcol_sect_name]:
         axelor_csv_columns[key] = data_parser[axcol_sect_name][key]
-    for key in data_parser["AXELOR_PRODUCT_CATEGORIES"]:
-        axelor_product_categories[key] = int(
-            data_parser["AXELOR_PRODUCT_CATEGORIES"][key]
-        )
-        if key in data_parser["AXELOR_PRODUCT_CATEGORIES_ABREV"]:
-            axelor_category_shorthand[key] = data_parser[
-                "AXELOR_PRODUCT_CATEGORIES_ABREV"
-            ][key]
-    for key in data_parser["AXELOR_PRODUCT_FAMILIES"]:
-        axelor_product_families[key] = int(data_parser["AXELOR_PRODUCT_FAMILIES"][key])
-        if key in data_parser["AXELOR_PRODUCT_FAMILIES_ABREV"]:
-            axelor_family_shorthand[key] = data_parser["AXELOR_PRODUCT_FAMILIES_ABREV"][
-                key
-            ]
-    for key in data_parser["AXELOR_PRODUCT_TYPES"]:
-        axelor_product_types[key] = data_parser["AXELOR_PRODUCT_TYPES"][key]
-    for key in data_parser["AXELOR_UNITS"]:
-        axelor_units[key] = data_parser["AXELOR_UNITS"][key]
-        if key in data_parser["AXELOR_UNITS_ABREV"]:
-            axelor_units_shorthand[key] = data_parser["AXELOR_UNITS_ABREV"][key]
-    fallback_category = data_parser.get("CONSTANTS", "AXELOR_PRODUCT_CATEGORIES")
-    fallback_family = data_parser.get("CONSTANTS", "AXELOR_PRODUCT_FAMILIES")
-    fallback_type = data_parser.get("CONSTANTS", "AXELOR_PRODUCT_TYPES")
-    fallback_unit = data_parser.get("CONSTANTS", "AXELOR_UNITS")
-    max_unit_shorthand = data_parser.get("CONSTANTS", "MAX_UNIT_SHORTHAND")
+    # Add all the sections in the data file into script, irregardless
+    # of type, since each section needs a unique name anyway.
+    # Section names should be lowercase, but not key names.
+    # That is because section names are usually all-caps, while
+    # key names are case-sensitive.
+    for section in data_parser.sections():
+        if section != axcol_sect_name:
+            meta_table[section.lower()] = {}
+            for key in data_parser[section]:
+                meta_table[section.lower()][key] = data_parser[section].getuni(key)
+    # Deal with fallback values and constants.
+    for constant_name in data_parser["CONSTANTS"]:
+        if constant_name.lower() in meta_table:
+            # Assume that in this case, it is a fallback
+            # for something. Fallback values are always
+            # a key for a section, meaning they'd always
+            # be a string.
+            fallback[constant_name.lower()] = data_parser["CONSTANTS"][constant_name]
+        else:
+            # Since they are constants, the name of them should be all caps.
+            constants[constant_name] = data_parser["CONSTANTS"].getuni(constant_name)
