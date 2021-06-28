@@ -289,9 +289,10 @@ for input_file in file_ws_dict:
     xlsx_file.close()
 
 # Figure out the proper mapping between Axelor CSV and xlsx.
-for input_file in file_ws_dict:
-    for ws_name in file_ws_dict[input_file]:
-        with open(map_file) as map_fptr:
+with open(map_file) as map_fptr:
+    axm_parser.init(map_fptr)
+    for input_file in file_ws_dict:
+        for ws_name in file_ws_dict[input_file]:
             common.map_dict[(input_file, ws_name)] = {}
             while not axm_parser.is_eof(map_fptr):
                 axm_line = axm_parser.get_axm_data(
