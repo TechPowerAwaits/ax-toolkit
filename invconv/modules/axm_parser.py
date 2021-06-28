@@ -1,6 +1,7 @@
 # Copyright 2021 Richard Johnston <techpowerawaits@outlook.com>
 # SPDX-license-identifier: 0BSD
 
+import math
 from modules import common
 from modules import msg_handler
 import string
@@ -25,6 +26,24 @@ def is_eof(axm_fptr):
     # or face infinite loop.
     stream_pos = cur_pos
     return False
+
+
+# Only the major version number is checked.
+SUPPORTED_AXM_VER = (3, 0)
+
+
+def init(axm_fptr):
+    ver_line = axm_fptr.readline().replace("\n", " ").lstrip().rstrip()
+    if "!AXM" in ver_line:
+        ver_line = ver_line.removeprefix("!AXM")
+        ver_float = float(ver_line)
+        major_ver = math.floor(ver_float)
+        if not major_ver == SUPPORTED_AXM_VER[0]:
+            msg_handler.error(
+                f"Map file is for v{major_ver}. Only v{SUPPORTED_AXM_VER[0]} is supported."
+            )
+    else:
+        msg_handler.error("Map file doesn't contain version line.")
 
 
 def get_axm_data(axm_fptr, input_file, ws_name, input_columns):
