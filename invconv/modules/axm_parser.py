@@ -495,8 +495,14 @@ def get_file_sect(file_name, section_name):
     file_section = (axm_file_name, axm_sect_name)
 
     file_section_list = list(ax_inputcol_dict.keys()) + ignore_list
+    # Try to find a fallback file_section before returning None.
     if file_section not in file_section_list:
-        return None
+        if (axm_file_name, sect_fallback) in file_section_list:
+            file_section = (axm_file_name, sect_fallback)
+        elif (file_fallback, sect_fallback) in file_section_list:
+            file_section = (file_fallback, sect_fallback)
+        else:
+            file_section = None
     return file_section
 
 
