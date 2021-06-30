@@ -290,24 +290,22 @@ for input_file in file_ws_dict:
 
 # Figure out the proper mapping between Axelor CSV and xlsx.
 with open(map_file) as map_fptr:
-    axm_parser.init(map_fptr)
-    for input_file in file_ws_dict:
-        for ws_name in file_ws_dict[input_file]:
-            common.map_dict[(input_file, ws_name)] = {}
-            while not axm_parser.is_eof(map_fptr):
-                axm_line = axm_parser.get_axm_data(
-                    map_fptr,
-                    input_file,
-                    ws_name,
-                    xlsx_headers[(input_file, ws_name)],
-                )
-                # If one of the members of the tuple is None, that
-                # indicates that either an entire line is a comment,
-                # a blank line has been found, or EOF has been reached.
-                if axm_line[0] is not None:
-                    ax_header = axm_line[0]
-                    input_header = axm_line[1]
-                    common.map_dict[(input_file, ws_name)][ax_header] = input_header
+    while not axm_parser.is_eof(map_fptr):
+        axm_parser.init(map_fptr)
+axm_parser.finalize()
+for input_file in file_ws_dict:
+    for ws_name in file_ws_dict[input_file]:
+        common.map_dict[(input_file, ws_name)] = {}
+        axm_dict = axm_parser.get_axm_data(
+            input_file, ws_name, xlsx_headers[(input_file, ws_name)]
+        )
+        # The returned dictionary can be empty if everything was optional
+        # and nothing was found.
+        if axm_dict is not None and len(axm_dict) > 0:
+            for key_val in axm_dict.items():
+                ax_header = key_val[0]
+                input_header = key_val[1]
+                common.map_dict[(input_file, ws_name)][ax_header] = input_header
 
 # Some mappings can be set as optional, so need to verify how many files/sections
 # are left.
