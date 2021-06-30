@@ -407,7 +407,12 @@ def finalize():
 # simply be just the base filename or a relative path.
 def get_file_name(file_name):
     return_name = ""
-    for file_section in ax_inputcol_dict:
+
+    # The ignore list should also be checked for appropriate filenames.
+    # That way, the appropriate files and sections can later be ignored.
+    file_section_list = list(ax_inputcol_dict.keys()) + ignore_list
+
+    for file_section in file_section_list:
         axm_file_name = file_section[0]
         if (
             file_name == axm_file_name
@@ -417,13 +422,33 @@ def get_file_name(file_name):
         ):
             return_name = axm_file_name
             break
+    # The ignore_list should also be checked for
+    # Test out file_name without file extension.
+    if (file_ext_pos := file_name.rfind(".")) != -1 and len(return_name) == 0:
+        max_pos = len(file_name) - 1
+        # Don't bother checking for file extension if filename
+        # is one character long or file_ext_pos wasn't found.
+        if max_pos > 0:
+            incr = file_ext_pos
+            tmp_list = list(file_name)
+            tmp_str = ""
+            while incr <= max_pos:
+                del tmp_list[file_ext_pos]
+                incr += 1
+            tmp_str = "".join(tmp_list)
+            return get_file_name(tmp_str)
     return return_name
 
 
-# Sections have to be an exact match.
+# Sections have to be an exact match (case sensitive).
 def get_sect_name(sect_name):
     return_name = ""
-    for file_section in ax_inputcol_dict:
+
+    # The ignore list should also be checked for appropriate section names.
+    # That way, the appropriate files and sections can later be ignored.
+    file_section_list = list(ax_inputcol_dict.keys()) + ignore_list
+
+    for file_section in file_section_list:
         axm_sect_name = file_section[1]
         if sect_name == axm_sect_name:
             return_name = axm_sect_name
@@ -443,7 +468,8 @@ def get_file_sect(file_name, section_name):
         axm_sect_name = sect_fallback
     file_section = (axm_file_name, axm_sect_name)
 
-    if file_section not in ax_inputcol_dict:
+    file_section_list = list(ax_inputcol_dict.keys()) + ignore_list
+    if file_section not in file_section_list:
         return None
     return file_section
 
@@ -480,7 +506,9 @@ def get_axm_data(file_name, section_name, input_columns):
                 id=msg_handler.get_xlsx_id(file_name, section_name)
             )
         )
-    if file_section in ignore_list:
+    # Not sure why one would want to do this, but it is technically possible for
+    # someone to !AVOID an entire file.
+    if file_section in ignore_list or (file_section[0], sect_fallback) in ignore_list:
         return None
 
     file_section_map = {}
