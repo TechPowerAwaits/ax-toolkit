@@ -115,22 +115,48 @@ def is_sect(line):
 
 
 def parse_sect(line):
-    return_tuple = (None, None)
+    file_section = (None, None)
     if is_sect(line):
-        tmp_line = line.removeprefix("[").removesuffix("]")
-        file_section = split_n_strip(tmp_line, ",")
-        file_name = file_section[0]
-        section_name = file_section[1]
-        # Use strip() to remove any extra spaces after "FILE:".
-        file_name = file_name.removeprefix("FILE:").strip()
-        # While file is required by the sect structure, section is optional.
-        # When section is not provided, it defaults to common.
-        if len(section_name) > 0:
-            section_name = section_name.removeprefix("SECTION:").strip()
+        tmp_line = line.removeprefix("[").removesuffix("]").strip().rstrip()
+        # The file name is always in the first position and
+        # an optional "SECTION" section entry can be added,
+        # seperated by a comma. However, both filenames and
+        # section names can contain commas, which requires careful
+        # parsing.
+        sect_pos = tmp_line.find("SECTION:")
+        if sect_pos == -1:
+            # Don't need to worry about section.
+            file_section = (sect_pos.removeprefix("FILE:").strip(), sect_fallback)
         else:
-            section_name = sect_fallback
-        return_tuple = (file_name, section_name)
-    return return_tuple
+            # Lists are easier to manipulate than string.
+            tmp_file_list = list(tmp_line)
+            tmp_sect_list = list(tmp_line)
+            incr = sect_pos
+            max_pos = len(tmp_line) - 1
+            # Remove the section related
+            # parts from the file list.
+            while incr <= max_pos:
+                del tmp_file_list[sect_pos]
+                incr += 1
+            # Remove the file related parts
+            # from the section list.
+            pre_sect_pos = sect_pos - 1
+            incr = 0
+            while incr <= pre_sect_pos:
+                del tmp_sect_list[0]
+                incr += 1
+            # Remove uneeded values and convert to string.
+            file_name = (
+                "".join(tmp_file_list)
+                .rstrip()
+                .removesuffix(",")
+                .rstrip()
+                .removeprefix("FILE:")
+                .strip()
+            )
+            section_name = "".join(tmp_sect_list).removeprefix("SECTION:").strip()
+            file_section = (file_name, section_name)
+    return file_section
 
 
 # axm supports different structure and operator types.
