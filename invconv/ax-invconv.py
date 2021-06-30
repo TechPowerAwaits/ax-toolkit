@@ -177,7 +177,7 @@ for input_file in file_ws_dict:
 
         # Only add to min_header_row if the header was found
         # and is not the only thing in object.
-        if header_row < max_rows[(input_file, ws_name)]:
+        if 0 < header_row < max_rows[(input_file, ws_name)]:
             # Check if there are only empty rows after header.
             post_header = header_row + 1
             post_header_list = []
