@@ -538,12 +538,14 @@ def get_axm_data(file_name, section_name, input_columns):
                 id=msg_handler.get_xlsx_id(file_name, section_name)
             )
         )
+    file_section_map = {}
+
     # Not sure why one would want to do this, but it is technically possible for
     # someone to !AVOID an entire file.
     if file_section in ignore_list or (file_section[0], sect_fallback) in ignore_list:
-        return None
+        # Returns blank dict.
+        return file_section_map
 
-    file_section_map = {}
     # First, test all possible input columns for exact input_column matches.
     for ax_col in ax_inputcol_dict[file_section]:
         # Default to None.

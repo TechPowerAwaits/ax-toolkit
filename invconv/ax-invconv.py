@@ -300,8 +300,9 @@ for input_file in file_ws_dict:
             input_file, ws_name, xlsx_headers[(input_file, ws_name)]
         )
         # The returned dictionary can be empty if everything was optional
-        # and nothing was found.
-        if axm_dict is not None and len(axm_dict) > 0:
+        # and nothing was found. It can also be because a section was
+        # avoided.
+        if len(axm_dict) > 0:
             for key_val in axm_dict.items():
                 ax_header = key_val[0]
                 input_header = key_val[1]
