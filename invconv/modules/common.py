@@ -1,5 +1,6 @@
 # Copyright 2021 Richard Johnston <techpowerawaits@outlook.com>
 # SPDX-license-identifier: 0BSD
+import collections
 from modules import invconv_ini
 from modules import msg_handler
 import string
@@ -12,18 +13,25 @@ meta_table = {}
 constants = {}
 fallback = {}
 
+# A dictionary containing
+# the list of arguments to
+# be parsed by the script.
+arg_dict = {}
+arg_tuple = collections.namedtuple("arg_tuple", ("short", "long", "help"))
+
 # Mapping between Axelor columns and input columns.
 # Filled in by function in axm_parser.py.
 map_dict = {}
 force_custom_code = False
 
-SUPPORTED_FORMAT_VER = 3
+SUPPORTED_FORMAT_VER = 4
 
 
 def init(fptr):
     data_parser = invconv_ini.data_parser
     data_parser.read_file(fptr)
 
+    global arg_dict
     global axelor_csv_columns
     global constants
     global fallback
@@ -58,6 +66,19 @@ def init(fptr):
             # a key for a section, meaning they'd always
             # be a string.
             fallback[constant_name.lower()] = data_parser["CONSTANTS"][constant_name]
+            # Also deal with creating the dictionary of arguments.
+            shortform_arg = data_parser["ARGUMENTS_ABREV"][constant_name]
+            longform_arg = data_parser["ARGUMENTS"][constant_name]
+            arg_dict[constant_name.lower()] = arg_tuple(
+                short=shortform_arg,
+                long=longform_arg,
+                help=generate_help(constant_name),
+            )
         else:
             # Since they are constants, the name of them should be all caps.
             constants[constant_name] = data_parser["CONSTANTS"].getuni(constant_name)
+
+
+def generate_help(target):
+    target = target.lower().replace("_", " ").title()
+    return f"Overrides the fallback value for {target}"
