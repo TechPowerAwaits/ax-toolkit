@@ -8,7 +8,6 @@ from openpyxl import load_workbook
 import os.path
 import progress.bar
 import string
-import time
 
 # Import invconv-specific modules
 from modules import axm_parser
@@ -38,7 +37,7 @@ parser.add_argument("-m", "--map-file", default="default.axm", help="AXM map fil
 parser.add_argument(
     "-l",
     "--log-file",
-    default=f"invconv-{time.strftime('%m-%d-%Y_%H-%M-%S')}.log",
+    default=msg_handler.get_default_logname(),
     help="File to store messages",
 )
 parser.add_argument(
@@ -90,7 +89,7 @@ parser.add_argument("input", nargs="+", help="Input file(s)")
 parser_args = parser.parse_args()
 input_files = parser_args.input
 map_file = parser_args.map_file
-msg_handler.log_file = parser_args.log_file
+msg_handler.init(parser_args.log_file)
 common.fallback["axelor_product_categories"] = parser_args.category
 common.fallback["axelor_product_families"] = parser_args.family
 common.fallback["axelor_product_types"] = parser_args.Type
