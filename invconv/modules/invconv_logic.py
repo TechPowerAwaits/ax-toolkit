@@ -162,20 +162,6 @@ def gen_code(cell_val):
     return code
 
 
-def get_code(cell_val):
-    # When the force-custom-code
-    # argument has been passed,
-    # check if a "code" header exists.
-    code = ""
-    if common.force_custom_code:
-        for col_name in xlsx_header_location:
-            if col_name.upper() == "CODE":
-                code = cell_val
-    if len(code) == 0:
-        code = gen_code(cell_val)
-    return code
-
-
 def get_product_type(cell_val):
     prod_type = ""
     for product_type in common.meta_table["axelor_product_types"]:
@@ -238,7 +224,7 @@ CSV_FUNCTION_MAP = {
     "internalDescription": get_intern_descript,
     "productFamily_importId": get_fam_id,
     "productCategory_importId": get_cat_id,
-    "code": get_code,
+    "code": gen_code,
     "productTypeSelect": get_product_type,
     "salesUnit_importId": get_unit,
     "purchasesUnit_importId": get_unit,

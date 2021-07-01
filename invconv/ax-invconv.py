@@ -44,7 +44,6 @@ parser.add_argument(
     "-h", "--help", action="help", help="show this help message and exit"
 )
 parser.add_argument("-v", "--version", action="version", version=__version__)
-
 parser.add_argument(
     "-t",
     "--type",
@@ -52,49 +51,36 @@ parser.add_argument(
     choices=["xlsx"],
     help="The type of file that is being imported",
 )
-parser.add_argument(
-    "-c",
-    "--category",
-    choices=common.meta_table["axelor_product_categories"],
-    default=common.fallback["axelor_product_categories"],
-    help="Fallback product category to place in output",
-)
-parser.add_argument(
-    "-f",
-    "--family",
-    choices=common.meta_table["axelor_product_families"],
-    default=common.fallback["axelor_product_families"],
-    help="Fallback product family to place in output",
-)
-parser.add_argument(
-    "-T",
-    "--Type",
-    choices=common.meta_table["axelor_product_types"],
-    default=common.fallback["axelor_product_types"],
-    help="Fallback product type to place in output",
-)
-parser.add_argument(
-    "-u",
-    "--unit",
-    choices=common.meta_table["axelor_units"],
-    default=common.fallback["axelor_units"],
-    help="Fallback unit to place in output",
-)
-parser.add_argument(
-    "--force-custom-code",
-    action="store_true",
-    help='Use custom code "as is" from input files',
-)
+
+# Looks at the fallback-related arguments defined in data file
+# and officially adds it as an argument.
+for section_name, arg_tuple in common.arg_dict.items():
+    short_arg = arg_tuple.short
+    long_arg = arg_tuple.long
+    help_text = arg_tuple.help
+    parser.add_argument(
+        short_arg,
+        long_arg,
+        default=common.fallback[section_name],
+        choices=common.meta_table[section_name],
+        help=help_text,
+    )
+
 parser.add_argument("input", nargs="+", help="Input file(s)")
-parser_args = parser.parse_args()
-input_files = parser_args.input
-map_file = parser_args.map_file
-msg_handler.init(parser_args.log_file)
-common.fallback["axelor_product_categories"] = parser_args.category
-common.fallback["axelor_product_families"] = parser_args.family
-common.fallback["axelor_product_types"] = parser_args.Type
-common.fallback["axelor_units"] = parser_args.unit
-common.force_custom_code = parser_args.force_custom_code
+parser_dict = vars(parser.parse_args())
+input_files = parser_dict["input"]
+map_file = parser_dict["map_file"]
+msg_handler.init(parser_dict["log_file"])
+
+# Looks at the fallback-related arguments again and
+# replaces all appropriate values in the fallback dict
+# with the user-provided values. If the user didn't override
+# the default fallback values, then the fallback values
+# in the dict will be replaced with the values it currently has.
+for section_name, arg_tuple in common.arg_dict.items():
+    long_arg = arg_tuple.long
+    key = long_arg.removeprefix("--").replace("-", "_")
+    common.fallback[section_name] = parser_dict[key]
 
 # On some xlsx files, the max_row and max_col
 # cannot be read.
