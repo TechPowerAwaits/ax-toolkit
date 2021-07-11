@@ -6,7 +6,7 @@ import sys
 AXM_ERROR_CODE = 4
 AXM_MSG_ID = "(from axm) "
 try:
-    from modules import msg_handler
+    import msg_handler
 
     def _fatal_error(error_msg):
         msg_with_id = AXM_MSG_ID + error_msg

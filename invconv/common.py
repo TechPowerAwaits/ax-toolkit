@@ -1,8 +1,8 @@
 # Copyright 2021 Richard Johnston <techpowerawaits@outlook.com>
 # SPDX-license-identifier: 0BSD
 import collections
-from modules import invconv_ini
-from modules import msg_handler
+import ini
+import msg_handler
 import string
 
 axelor_csv_columns = {}
@@ -23,7 +23,7 @@ SUPPORTED_FORMAT_VER = 4
 
 
 def init(fptr):
-    data_parser = invconv_ini.data_parser
+    data_parser = ini.data_parser
     data_parser.read_file(fptr)
 
     global arg_dict
