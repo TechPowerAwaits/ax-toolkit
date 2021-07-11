@@ -4,13 +4,14 @@
 # SPDX-license-identifier: 0BSD
 
 import argparse
-from openpyxl import load_workbook
 import os.path
-import progress.bar
 import string
 
-# Import invconv-specific modules
-from modules import axm_parser
+from openpyxl import load_workbook
+import progress.bar
+
+import axm.parser
+import axm.utils
 from modules import cell_loc
 from modules import common
 from modules import invconv_logic
@@ -99,7 +100,7 @@ for input_file in input_files:
     xlsx_ws_list = xlsx_file.sheetnames
     for ws_name in xlsx_ws_list:
         xlsx_id = msg_handler.get_xlsx_id(input_file, ws_name)
-        file_ws_dict[input_file] += [ws_name]
+        file_ws_dict[input_file].append(ws_name)
         ws = xlsx_file[ws_name]
 
         max_row = ws.max_row
@@ -169,7 +170,7 @@ for input_file in file_ws_dict:
             for col_incr in cell_loc.col_iter(max_cols[(input_file, ws_name)]):
                 col_letter = cell_loc.get_col_letter(col_incr)
                 row_str = str(post_header)
-                post_header_list += str(ws[col_letter + row_str].value)
+                post_header_list.append(str(ws[col_letter + row_str].value))
             if post_header_list.count("None") != len(post_header_list):
                 min_header_rows[(input_file, ws_name)] = header_row
     xlsx_file.close()
@@ -222,7 +223,7 @@ for input_file in file_ws_dict:
         input_file, read_only=True, keep_vba=False, data_only=True, keep_links=False
     )
     for ws_name in file_ws_dict[input_file]:
-        xlsx_headers[(input_file, ws_name)] = {}
+        xlsx_headers[(input_file, ws_name)] = []
         ws = xlsx_file[ws_name]
         # These variables are used to keep
         # track of if a valid string or int
@@ -244,7 +245,7 @@ for input_file in file_ws_dict:
             else:
                 if start_none != 0 and not valid_after_none:
                     valid_after_none = True
-                xlsx_headers[(input_file, ws_name)][str(cell)] = col_incr
+                xlsx_headers[(input_file, ws_name)].append(str(cell))
         if start_none > 0 and not valid_after_none:
             before_none = start_none - 1
             if before_none == 0:
@@ -274,35 +275,11 @@ for input_file in file_ws_dict:
     xlsx_file.close()
 
 # Figure out the proper mapping between Axelor CSV and xlsx.
+axm.parser.init(xlsx_headers)
 with open(map_file) as map_fptr:
-    while not axm_parser.is_eof(map_fptr):
-        axm_parser.init(map_fptr)
-axm_parser.finalize()
-for input_file in file_ws_dict:
-    for ws_name in file_ws_dict[input_file]:
-        common.map_dict[(input_file, ws_name)] = {}
-        axm_dict = axm_parser.get_axm_data(
-            input_file, ws_name, xlsx_headers[(input_file, ws_name)]
-        )
-        # The returned dictionary can be empty if everything was optional
-        # and nothing was found. It can also be because a section was
-        # avoided.
-        if len(axm_dict) > 0:
-            for key_val in axm_dict.items():
-                ax_header = key_val[0]
-                input_header = key_val[1]
-                common.map_dict[(input_file, ws_name)][ax_header] = input_header
-
-# Some mappings can be set as optional, so need to verify how many files/sections
-# are left.
-for input_file in file_ws_dict:
-    for ws_name in file_ws_dict[input_file]:
-        if len(common.map_dict[(input_file, ws_name)]) == 0:
-            file_ws_dict[input_file].remove(ws_name)
-    if len(file_ws_dict[input_file]) == 0:
-        msg_handler.panic(string.Template("$file does not have any valid mappings."))
-if len(file_ws_dict) == 0:
-    msg_handler.error("No file has valid mappings.")
+    while not axm.utils.is_eof(map_fptr):
+        axm.parser.parse(map_fptr)
+axm.parser.finalize()
 
 # Setup progress bar.
 max_oper = 0
@@ -328,14 +305,7 @@ with progress.bar.IncrementalBar(
         )
         for ws_name in file_ws_dict[input_file]:
             ws = xlsx_file[ws_name]
-            invconv_logic.file_ws_init(
-                input_file, ws_name, max_cols[(input_file, ws_name)]
-            )
-
-            # Use headers gathered earlier.
-            for xlsx_header in xlsx_headers[(input_file, ws_name)]:
-                header_index = xlsx_headers[(input_file, ws_name)][xlsx_header]
-                invconv_logic.set_header_location(xlsx_header, header_index)
+            invconv_logic.init(input_file, ws_name, xlsx_headers[(input_file, ws_name)])
 
             # Don't need to start at header row.
             starting_row = min_header_rows[(input_file, ws_name)] + 1

@@ -1,11 +1,21 @@
 # Copyright 2021 Richard Johnston <techpowerawaits@outlook.com>
 # SPDX-license-identifier: 0BSD
 
+import axm.output
 from modules import common
 from modules import msg_handler
 import csv
 import string
 import sys
+
+# In some cases, functions
+# might be run multiple times
+# while in the same row, possibly
+# skewing values. This keeps track
+# of the number of rows outputted
+# (starting at zero and not
+# including the Axelor column row).
+row_incr = 0
 
 # A seperate function is requied for units,
 # as some shorthand forms can be one character long.
@@ -25,12 +35,13 @@ def find_unit_shorthand(haystack, needle):
             ):
                 found_int_or_space = True
             if found_int_or_space:
-                subsection = []
+                subsection_list = []
                 for incr in range(needle_len):
                     if index + incr < haystack_len:
-                        subsection += haystack[index + incr]
+                        subsection_list.append(haystack[index + incr])
                     else:
                         break
+                subsection = "".join(subsection_list)
                 if needle in subsection:
                     # If it doesn't have a space after it or end right away,
                     # it is probably a false positive.
@@ -53,14 +64,20 @@ def find_unit_shorthand(haystack, needle):
     return False
 
 
+used_product_names = set()
+
+
 def get_name(name):
     global used_product_names
     if name in used_product_names:
         msg_handler.warning(
             string.Template(
                 "Product name $name has already been defined in $id."
-            ).substitute(name=name, id=msg_handler.get_xlsx_id(input_file, ws_name)),
+            ).substitute(
+                name=name, id=msg_handler.get_xlsx_id(file_name, section_name)
+            ),
         )
+    used_product_names.add(name)
     return name
 
 
@@ -110,9 +127,6 @@ def get_cat_id(cell_val):
     return cat_id
 
 
-code_incr = {}
-
-
 def gen_code(cell_val):
     code = ""
     cat_id = get_cat_id(cell_val)
@@ -144,21 +158,20 @@ def gen_code(cell_val):
             code = "INVCONV"
         else:
             code = csv_row["name"].upper().replace(" ", "_")
-    key = code
-    cur_code_incr = code_incr.get(key, "0000")
-    code_incr[key] = cur_code_incr
-    code = code + "-" + cur_code_incr
-    # Need to increment for next time.
-    code_incr_int = int(cur_code_incr)
-    code_incr_int += 1
-    if code_incr_int >= 1000:
-        code_incr[key] = str(code_incr_int)
-    elif code_incr_int >= 100:
-        code_incr[key] = "0" + str(code_incr_int)
-    elif code_incr_int >= 10:
-        code_incr[key] = "0" + "0" + str(code_incr_int)
+    # A list is used to make code more portable.
+    tmp_code_list = [code, "-"]
+    # Row number starting at zero is used in code.
+    # Numbers under 1000 are prepended with zeros.
+    if row_incr >= 1000:
+        pass
+    elif row_incr >= 100:
+        tmp_code_list.append("0")
+    elif row_incr >= 10:
+        tmp_code_list.append("00")
     else:
-        code_incr[key] = "0" + "0" + "0" + str(code_incr_int)
+        tmp_code_list.append("000")
+    tmp_code_list.append(str(row_incr))
+    code = "".join(tmp_code_list)
     return code
 
 
@@ -197,7 +210,6 @@ def get_unit(cell_val):
 
 def get_price(cell_val):
     price_str = ""
-    price = 0.00
     for char in cell_val:
         if char in string.digits or char == ".":
             price_str += char
@@ -208,11 +220,12 @@ def get_price(cell_val):
         msg_handler.warning(
             string.Template(
                 "Cell in $id has $val and not cost. Defaulting to 0.00."
-            ).substitute(id=msg_handler.get_xlsx_id(input_file, ws_name), val=cell_val)
+            ).substitute(
+                id=msg_handler.get_xlsx_id(file_name, section_name), val=cell_val
+            )
         )
         price_str = "0.00"
-    price = float(price_str)
-    return price
+    return price_str
 
 
 # This maps AXELOR_CSV_COLUMN names to
@@ -234,82 +247,52 @@ CSV_FUNCTION_MAP = {
 
 csv_row = {}
 
-# Columns start at 1.
-col_incr = 1
-input_file = ""
-ws_name = ""
-max_col = 0
-xlsx_header_location = {}
-# header_location is the same as xlsx_header_location
-# except it uses the Axelor column names.
-header_location = {}
-
-used_product_names = []
+file_name = None
+section_name = None
+# Contains the input header
+# names in their proper order.
+input_header_list = []
+# Keeps track of the position amongst
+# the input columns
+pos_index = 0
 
 
-def file_ws_init(local_file, local_ws, local_max_col):
-    global input_file
-    global ws_name
-    global max_col
-    global col_incr
-    global xlsx_header_location
-    global header_location
-    input_file = local_file
-    ws_name = local_ws
-    max_col = local_max_col
-    col_incr = 1
-    xlsx_header_location.clear()
-    header_location.clear()
-    for used_column in CSV_FUNCTION_MAP:
-        if used_column not in common.map_dict[(input_file, ws_name)]:
-            msg_handler.warning(
-                f"column {used_column} is in map file, but is not handled."
-            )
-
-
-def set_header_location(key, val):
-    global xlsx_header_location
-    global header_location
-    if key in xlsx_header_location:
-        msg_handler.warning(
-            string.Template(
-                "column $col at position $col_pos is the same as at $prev_col_pos earlier in $id."
-            ).substitute(
-                col=key,
-                col_pos=str(val),
-                prev_col_pos=str(xlsx_header_location[key]),
-                id=msg_handler.get_xlsx_id(input_file, ws_name),
-            )
-        )
-    elif key not in common.map_dict[(input_file, ws_name)].values():
-        msg_handler.warning(
-            string.Template("column $col from $id will be ignored.").substitute(
-                col=key, id=msg_handler.get_xlsx_id(input_file, ws_name)
-            )
-        )
-    else:
-        xlsx_header_location[key] = val
-        # Not all Axelor CSV columns are used, so it would be more
-        # efficant to use common.map_dict.
-        for mapped_axelor_column in common.map_dict[(input_file, ws_name)]:
-            if common.map_dict[(input_file, ws_name)][mapped_axelor_column] == key:
-                header_location[mapped_axelor_column] = val
+def init(local_file_name, local_section_name, header_list):
+    global file_name
+    global section_name
+    global input_header_list
+    file_name = local_file_name
+    section_name = local_section_name
+    input_header_list = header_list
 
 
 def main(val):
-    global col_incr
     global csv_row
+    global pos_index
+    global row_incr
     str_val = ""
     if val is not None:
         # Force val to be string.
         str_val = str(val)
-    for header in header_location:
-        if header_location[header] == col_incr:
-            csv_row[header] = CSV_FUNCTION_MAP[header](str_val)
-    col_incr = col_incr + 1
-    if col_incr > max_col:
-        col_incr = 1
-        commit_row()
+    for header in common.axelor_csv_columns:
+        output_str_param = [(file_name, section_name), header, str_val]
+        input_col = input_header_list[pos_index]
+        if header in CSV_FUNCTION_MAP:
+            output_str_param.append(CSV_FUNCTION_MAP[header])
+        if axm.output.is_valid_input_col((file_name, section_name), header, input_col):
+            csv_row[header] = axm.output.string(*output_str_param)
+    max_pos = len(input_header_list) - 1
+    if pos_index == max_pos:
+        pos_index = 0
+        # Only commit if there is content in csv_row.
+        # There won't be if a section is avoided, for instance.
+        if len(csv_row) > 0:
+            commit_row()
+            row_incr += 1
+        else:
+            csv_row.clear()
+    else:
+        pos_index += 1
 
 
 def commit_headers():
@@ -336,7 +319,7 @@ def commit_row():
     # Enforce a consistant ordering.
     row_list = []
     for ax_column in common.axelor_csv_columns:
-        row_list += [csv_row[ax_column]]
+        row_list.append(csv_row[ax_column])
 
     csv_out = csv.writer(sys.stdout, dialect="excel")
     csv_out.writerow(row_list)
