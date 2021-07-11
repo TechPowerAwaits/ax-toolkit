@@ -22,7 +22,7 @@ def col_iter(*col_args):
     if col_len > 1:
         cur_val = col_start
         while cur_val <= col_len:
-            iter_list += [cur_val]
+            iter_list.append(cur_val)
             cur_val += 1
     else:
         iter_list = None
@@ -70,6 +70,11 @@ def get_col_letter(col_num):
         if num_letters == 0 or col_num > max_value:
             num_letters += 1
 
+    # Replaced string append with string join. DJ20210715
+    #
+    # Create an empty list of strings.
+    listOfStrings = []
+
     # Determine the combination of letters required
     # to represent the specified "col_num" value.
     #
@@ -102,9 +107,12 @@ def get_col_letter(col_num):
             ):
                 letter_index -= 1
 
-        col_letters += string.ascii_uppercase[letter_index - 1]
+        # Replaced string append with string join. DJ20210715
+        listOfStrings.append(string.ascii_uppercase[letter_index - 1])
+
         col_num -= letter_index * int(math.pow(NUM_UPPERCASE_LETTERS, letter_idx - 1))
 
+    col_letters = "".join(listOfStrings)
     return col_letters
 
 

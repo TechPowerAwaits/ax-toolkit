@@ -19,11 +19,6 @@ fallback = {}
 arg_dict = {}
 arg_tuple = collections.namedtuple("arg_tuple", ("short", "long", "help"))
 
-# Mapping between Axelor columns and input columns.
-# Filled in by function in axm_parser.py.
-map_dict = {}
-force_custom_code = False
-
 SUPPORTED_FORMAT_VER = 4
 
 
