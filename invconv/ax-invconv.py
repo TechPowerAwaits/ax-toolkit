@@ -12,10 +12,10 @@ import progress.bar
 
 import axm.parser
 import axm.utils
-from modules import cell_loc
-from modules import common
-from modules import invconv_logic
-from modules import msg_handler
+import cell_pos
+import common
+import logic
+import msg_handler
 
 ver_path = os.path.join(os.path.pardir, "VERSION")
 try:
@@ -150,7 +150,7 @@ for input_file in file_ws_dict:
         ws = xlsx_file[ws_name]
         header_row = 0
 
-        for row in cell_loc.row_iter(max_rows[(input_file, ws_name)]):
+        for row in cell_pos.row_iter(max_rows[(input_file, ws_name)]):
             row_str = str(row)
             # A row with just a title would not fill up the entire max_column.
             # As a result, there would be None at either the first or second
@@ -167,8 +167,8 @@ for input_file in file_ws_dict:
             # Check if there are only empty rows after header.
             post_header = header_row + 1
             post_header_list = []
-            for col_incr in cell_loc.col_iter(max_cols[(input_file, ws_name)]):
-                col_letter = cell_loc.get_col_letter(col_incr)
+            for col_incr in cell_pos.col_iter(max_cols[(input_file, ws_name)]):
+                col_letter = cell_pos.get_col_letter(col_incr)
                 row_str = str(post_header)
                 post_header_list.append(str(ws[col_letter + row_str].value))
             if post_header_list.count("None") != len(post_header_list):
@@ -231,8 +231,8 @@ for input_file in file_ws_dict:
         # header.
         start_none = 0
         valid_after_none = False
-        for col_incr in cell_loc.col_iter(max_cols[(input_file, ws_name)]):
-            col_letter = cell_loc.get_col_letter(col_incr)
+        for col_incr in cell_pos.col_iter(max_cols[(input_file, ws_name)]):
+            col_letter = cell_pos.get_col_letter(col_incr)
             row_str = str(min_header_rows[(input_file, ws_name)])
             cell = ws[col_letter + row_str].value
 
@@ -251,23 +251,23 @@ for input_file in file_ws_dict:
             if before_none == 0:
                 msg_handler.panic(
                     string.Template(
-                        "Attempted to reduce max column length of $id from $col to 0 due to None in $cell_loc."
+                        "Attempted to reduce max column length of $id from $col to 0 due to None in $cell_pos."
                     ).substitute(
                         col=max_cols[(input_file, ws_name)],
                         id=msg_handler.get_xlsx_id(input_file, ws_name),
-                        cell_loc=cell_loc.get_col_letter(start_none)
+                        cell_pos=cell_pos.get_col_letter(start_none)
                         + str(min_header_rows[(input_file, ws_name)]),
                     )
                 )
             else:
                 msg_handler.info(
                     string.Template(
-                        "Reducing max column length of $id from $cur_col to $new_col due to None in $cell_loc."
+                        "Reducing max column length of $id from $cur_col to $new_col due to None in $cell_pos."
                     ).substitute(
                         id=msg_handler.get_xlsx_id(input_file, ws_name),
                         cur_col=str(max_cols[(input_file, ws_name)]),
                         new_col=str(before_none),
-                        cell_loc=cell_loc.get_col_letter(start_none)
+                        cell_pos=cell_pos.get_col_letter(start_none)
                         + str(min_header_rows[(input_file, ws_name)]),
                     )
                 )
@@ -293,7 +293,7 @@ for input_file in file_ws_dict:
         max_oper += max_cells
 
 # Convert xlsx to Axelor-compatible CSV.
-invconv_logic.commit_headers()
+logic.commit_headers()
 with progress.bar.IncrementalBar(
     message="Generating output",
     max=max_oper,
@@ -305,25 +305,25 @@ with progress.bar.IncrementalBar(
         )
         for ws_name in file_ws_dict[input_file]:
             ws = xlsx_file[ws_name]
-            invconv_logic.init(input_file, ws_name, xlsx_headers[(input_file, ws_name)])
+            logic.init(input_file, ws_name, xlsx_headers[(input_file, ws_name)])
 
             # Don't need to start at header row.
             starting_row = min_header_rows[(input_file, ws_name)] + 1
-            for row in cell_loc.row_iter(starting_row, max_rows[(input_file, ws_name)]):
+            for row in cell_pos.row_iter(starting_row, max_rows[(input_file, ws_name)]):
                 row_str = str(row)
-                for col in cell_loc.col_iter(max_cols[(input_file, ws_name)]):
-                    col_letter = cell_loc.get_col_letter(col)
+                for col in cell_pos.col_iter(max_cols[(input_file, ws_name)]):
+                    col_letter = cell_pos.get_col_letter(col)
                     cell = ws[col_letter + row_str].value
                     if cell == "#REF!":
                         msg_handler.warning(
                             string.Template(
-                                'Unknown reference found at $cell_loc in $id. Defaulting to "unknown".'
+                                'Unknown reference found at $cell_pos in $id. Defaulting to "unknown".'
                             ).substitute(
-                                cell_loc=col_letter + row_str,
+                                cell_pos=col_letter + row_str,
                                 id=msg_handler.get_xlsx_id(input_file, ws_name),
                             )
                         )
                         cell = "unknown"
-                    invconv_logic.main(cell)
+                    logic.main(cell)
                     progress_bar.next()
         xlsx_file.close()

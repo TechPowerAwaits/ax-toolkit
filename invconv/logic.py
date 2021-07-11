@@ -2,8 +2,8 @@
 # SPDX-license-identifier: 0BSD
 
 import axm.output
-from modules import common
-from modules import msg_handler
+import common
+import msg_handler
 import csv
 import string
 import sys
