@@ -18,8 +18,11 @@ from modules import invconv_logic
 from modules import msg_handler
 
 ver_path = os.path.join(os.path.pardir, "VERSION")
-with open(ver_path, "r") as version_file:
-    ver_str = version_file.readline()
+try:
+    with open(ver_path, "r") as version_file:
+        __version__ = version_file.readline()
+except FileNotFoundError:
+    __version__ = "Unknown"
 
 parser = argparse.ArgumentParser(
     description="Converts inventory lists to a Axelor-compatible CSV format",
@@ -41,7 +44,7 @@ parser.add_argument(
 parser.add_argument(
     "-h", "--help", action="help", help="show this help message and exit"
 )
-parser.add_argument("-v", "--version", action="version", version=ver_str)
+parser.add_argument("-v", "--version", action="version", version=__version__)
 
 parser.add_argument(
     "-t",
