@@ -26,8 +26,11 @@ DEFAULT_BRANDING_FILE = "branding_logo.png"
 PAUSE_SECONDS = 3
 
 ver_path = os.path.join(os.path.pardir, "VERSION")
-with open(ver_path, "r") as version_file:
-    ver_str = version_file.readline()
+try:
+    with open(ver_path, "r") as version_file:
+        __version__ = version_file.readline()
+except FileNotFoundError:
+    __version__ = "Unknown"
 
 # Source code wise, Axelor Open Suite depends on Axelor Open Webapp.
 # Each url should provide binary WAR files with priority given to
@@ -49,7 +52,7 @@ default_war_basename = "axelor-erp-v"
 parser = argparse.ArgumentParser(
     description="Grabs a copy of Axelor", epilog="Licensed under the 0BSD."
 )
-parser.add_argument("-v", "--version", action="version", version=ver_str)
+parser.add_argument("-v", "--version", action="version", version=__version__)
 parser.add_argument("-s", "--src", action="store_true")
 parser.add_argument(
     "-b", "--brand_file", default=DEFAULT_BRANDING_FILE, help="Path to logo"
