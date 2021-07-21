@@ -1,9 +1,11 @@
 # Copyright 2021 Richard Johnston <techpowerawaits@outlook.com>
 # SPDX-license-identifier: 0BSD
 import collections
-import ini
-import msg_handler
 import string
+
+from loguru import logger
+
+import ini
 
 axelor_csv_columns = {}
 
@@ -19,6 +21,11 @@ fallback = {}
 arg_dict = {}
 arg_tuple = collections.namedtuple("arg_tuple", ("short", "long", "help"))
 
+# When enabled, provides extra debugging information.
+is_debug = False
+
+# Supported data file version number.
+# Must be exact match.
 SUPPORTED_FORMAT_VER = 4
 
 
@@ -34,7 +41,7 @@ def init(fptr):
 
     data_format_version = data_parser.getint("INFO", "INVCONV_FORMAT")
     if data_format_version != SUPPORTED_FORMAT_VER:
-        msg_handler.error(
+        logger.critical(
             string.Template(
                 "Data format version $format_ver is unsupported."
             ).substitute(format_ver=data_format_version)

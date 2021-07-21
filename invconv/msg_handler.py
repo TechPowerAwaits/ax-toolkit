@@ -1,24 +1,150 @@
 # Copyright 2021 Richard Johnston <techpowerawaits@outlook.com>
 # SPDX-license-identifier: 0BSD
 
-import os.path
-import string
+import os
 import sys
 import time
 
+from loguru import logger
+
+import common
+
 # Default error code that is returned
 # in case of a fatal error.
-ERROR_CODE = 2
+ERROR_CODE = 1
+# Critical system exit handler.
+critical_id = -1
+# Default log handler
+# (included with loguru)
+DEFAULT_ID = 0
 
-# Default error code that is returned
-# when a user exits from a panic.
-PANIC_CODE = 3
+# A filter is needed to make sure only one level is used
+# per sink.
+def _lev_filter(lev):
+    def _filter(record):
+        required_lev = lev
+        if required_lev == record["level"].name:
+            return True
+        return False
 
-# Log file is defined here so that a file pointer
-# can repeatedly be created and destroyed. This is needed
-# because if the script crashes, the file won't be properly
-# closed otherwise.
-log_file = ""
+    return _filter
+
+
+def init():
+    global critical_id
+    # Default loguru handler sends everything to stderr,
+    # which is not desired. Rather only errors and
+    # critical errors should be outputted to stderr.
+    logger.remove(DEFAULT_ID)
+
+    # Functions are needed to set the format of
+    # error messages sent to stderr.
+    def error_str(record):
+        error_list = []
+        # To get the attention of the user.
+        PANIC_TIMES = 6
+        LINE_BREAK_TOP = 3
+        LINE_BREAK_BOTTOM = 2
+
+        line_break_incr = 0
+        while line_break_incr < LINE_BREAK_TOP:
+            error_list.append(os.linesep)
+            line_break_incr += 1
+
+        incr = 0
+        while incr < PANIC_TIMES:
+            # Try to avoid having an extra space at
+            # the end.
+            if incr > 0:
+                error_list.append(" ")
+            error_list.append("PANIC!")
+            incr += 1
+
+        line_break_incr = 0
+        while line_break_incr < LINE_BREAK_BOTTOM:
+            error_list.append(os.linesep)
+            line_break_incr += 1
+        error_list.append(record["message"])
+        error_list.append(os.linesep)
+        return "".join(error_list)
+
+    # Errors resulting from other (non-fatal) errors
+    # corresponds to a new level: failure.
+    logger.level("FAILURE", no=35, color="<red>", icon="!")
+
+    # The amount of details provided depends on if debugging is enabled.
+    if common.is_debug:
+        logger.add(
+            sys.stderr,
+            backtrace=True,
+            diagnose=True,
+            format="{message}",
+            filter=_lev_filter("DEBUG"),
+            level="DEBUG",
+        )
+    logger.add(
+        sys.stderr,
+        backtrace=common.is_debug,
+        diagnose=common.is_debug,
+        format=error_str,
+        filter=_lev_filter("ERROR"),
+        level="ERROR",
+    )
+    logger.add(
+        sys.stderr,
+        backtrace=common.is_debug,
+        diagnose=common.is_debug,
+        format="{level}: {message}",
+        filter=_lev_filter("FAILURE"),
+        level="FAILURE",
+    )
+    logger.add(
+        sys.stderr,
+        backtrace=True,
+        diagnose=common.is_debug,
+        filter=_lev_filter("CRITICAL"),
+        level="CRITICAL",
+    )
+    # Need to catch critical errors after everything has been logged and
+    # exit. The handler id is recorded so that it can be removed and
+    # readded when file logging is added.
+    critical_id = logger.add(
+        lambda msg: sys.exit(ERROR_CODE),
+        filter=_lev_filter("CRITICAL"),
+        level="CRITICAL",
+    )
+
+
+# Enables everything to get
+# logged to a file.
+def set_log(logfile):
+    global critical_id
+
+    # Debug messages should not even be sent to log file
+    # unless debugging is enabled.
+    def filter_debug(record):
+        if not common.is_debug:
+            if record["level"].name == "DEBUG":
+                return False
+        return True
+
+    logger.add(
+        logfile,
+        backtrace=True,
+        catch=True,
+        diagnose=common.is_debug,
+        filter=filter_debug,
+        errors="replace",
+    )
+    # Have exiting after critical error happen after
+    # everything has been written to log file.
+    if critical_id > -1:
+        logger.remove(critical_id)
+    critical_id = logger.add(
+        lambda msg: sys.exit(ERROR_CODE),
+        filter=_lev_filter("CRITICAL"),
+        level="CRITICAL",
+    )
 
 
 def get_default_logname():
@@ -42,71 +168,18 @@ def get_default_logname():
     return logname
 
 
-def init(filepath):
-    global log_file
-    log_file = filepath
-
-
-def error(error_str, status_code=2):
-    # To get the attention of the user.
-    print("\n\n\nFatal Error!!!\n\n", end="", file=sys.stderr)
-    print(error_str, file=sys.stderr)
-    with open(log_file, "a", errors="replace") as log_fptr:
-        print(f"FE: {error_str}", file=log_fptr)
-    sys.exit(status_code)
+# Asks the user if they want to terminate the script
+# (typically done if a non-critical error has been
+# reached).
+def does_continue():
+    print("Do you want to terminate the script? [y/n] > ", end="", file=sys.stderr)
+    response = input()
+    if response.lower() == "y" or response.lower() == "yes":
+        logger.info("Script has not been continued.")
+        sys.exit(ERROR_CODE)
+    print(os.linesep, os.linesep, end="", file=sys.stderr)
 
 
 # Usually used within error or warning messages.
 def get_xlsx_id(filepath, ws_name):
     return filepath + " WS: " + str(ws_name)
-
-
-def info(info_str):
-    with open(log_file, "a", errors="replace") as log_fptr:
-        print(f"Info: {info_str}", file=log_fptr)
-
-
-def input_fail(fail_str):
-    # This doesn't need a new line as the panic() function already
-    # made new lines and will do so again.
-    print(f"Input invalid: {fail_str}.", end="", file=sys.stderr)
-    with open(log_file, "a", errors="replace") as log_fptr:
-        print(f"Input invalid: {fail_str}.", file=log_fptr)
-
-
-def panic(issue_str, status_code=PANIC_CODE):
-    # To get the attention of the user.
-    PANIC_TIMES = 6
-    print("\n\n\n", end="", file=sys.stderr)
-    incr = 0
-    while incr < PANIC_TIMES:
-        print("PANIC! ", end="", file=sys.stderr)
-        incr += 1
-    print("\n\n", end="", file=sys.stderr)
-    print(issue_str, file=sys.stderr)
-    with open(log_file, "a", errors="replace") as log_fptr:
-        print(f"Panic: {issue_str}", file=log_fptr)
-
-    print("Do you want to terminate the script? [y/n] > ", end="", file=sys.stderr)
-    response = input()
-    if response.lower() == "y" or response.lower() == "yes":
-        sys.exit(status_code)
-
-
-def panic_user_input(issue_str, user_prompt, status_code=PANIC_CODE):
-    panic(issue_str, status_code)
-    print("\n\n", end="", file=sys.stderr)
-    print(user_prompt + " > ", end="", file=sys.stderr)
-    user_input = input()
-    print("\n", end="", file=sys.stderr)
-    with open(log_file, "a", errors="replace") as log_fptr:
-        print(
-            string.Template("Panic Response: $input").substitute(input=user_input),
-            file=log_fptr,
-        )
-    return user_input
-
-
-def warning(warn_str):
-    with open(log_file, "a", errors="replace") as log_fptr:
-        print(f"Warning: {warn_str}", file=log_fptr)
