@@ -3,22 +3,14 @@
 
 import sys
 
-AXM_ERROR_CODE = 4
+AXM_ERROR_CODE = 2
 AXM_MSG_ID = "(from axm) "
-try:
-    import msg_handler
-
-    def _fatal_error(error_msg):
-        msg_with_id = AXM_MSG_ID + error_msg
-        msg_handler.error(msg_with_id, AXM_ERROR_CODE)
 
 
-except ModuleNotFoundError:
-
-    def _fatal_error(error_msg):
-        msg_with_id = "FE: " + AXM_MSG_ID + error_msg
-        print(msg_with_id, file=sys.stderr)
-        sys.exit(AXM_ERROR_CODE)
+def _fatal_error(error_msg):
+    msg_with_id = AXM_MSG_ID + error_msg
+    print(msg_with_id, file=sys.stderr)
+    sys.exit(AXM_ERROR_CODE)
 
 
 # Base class

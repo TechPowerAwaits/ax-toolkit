@@ -7,6 +7,7 @@ import argparse
 import os.path
 import string
 
+from loguru import logger
 from openpyxl import load_workbook
 import progress.bar
 
@@ -41,6 +42,7 @@ parser.add_argument(
     default=msg_handler.get_default_logname(),
     help="File to store messages",
 )
+parser.add_argument("-D", "--debug", action="store_true", help="Enables debugging")
 parser.add_argument(
     "-h", "--help", action="help", help="show this help message and exit"
 )
@@ -71,7 +73,14 @@ parser.add_argument("input", nargs="+", help="Input file(s)")
 parser_dict = vars(parser.parse_args())
 input_files = parser_dict["input"]
 map_file = parser_dict["map_file"]
-msg_handler.init(parser_dict["log_file"])
+common.is_debug = parser_dict["debug"]
+
+# Set up logger.
+# (If any errors occured before
+# this point, it would be handled
+# by loguru's default log handler.)
+msg_handler.init()
+msg_handler.set_log(parser_dict["log_file"])
 
 # Looks at the fallback-related arguments again and
 # replaces all appropriate values in the fallback dict
@@ -105,35 +114,33 @@ for input_file in input_files:
 
         max_row = ws.max_row
         max_col = ws.max_column
-        type_val_err_msg = "Setting variable to None."
-        less_than_one_msg = "Counting should start at one."
         while (not isinstance(max_row, int)) or (max_row <= 0):
+            logger.error(f"Max row for {xlsx_id} is {str(max_row)}.")
+            msg_handler.does_continue()
             try:
+                logger.info("User providing number of rows (starting at 1).")
                 max_row = int(
-                    msg_handler.panic_user_input(
-                        f"Max row for {xlsx_id} is {str(max_row)}.",
-                        "Please provide the number of rows (starting at 1)",
-                    )
+                    input("Please provide the number of rows (starting at 1) > ")
                 )
             except (ValueError, TypeError):
-                msg_handler.input_fail(type_val_err_msg)
+                logger.log("FAILURE", "Input could not be converted to int.")
                 max_row = None
             if (isinstance(max_row, int)) and (max_row <= 0):
-                msg_handler.input_fail(less_than_one_msg)
+                logger.log("FAILURE", "Input is less than one.")
         max_rows[(input_file, ws_name)] = max_row
         while (not isinstance(max_col, int)) or (max_col <= 0):
+            logger.error(f"Max row for {xlsx_id} is {str(max_row)}")
+            msg_handler.does_continue()
             try:
+                logger.info("User providing number of columns (starting at 1).")
                 max_col = int(
-                    msg_handler.panic_user_input(
-                        f"Max col for {xlsx_id} is {str(max_col)}.",
-                        "Please provide the number of columns (starting at 1)",
-                    )
+                    input("Please provide the number of columns (starting at 1) > ")
                 )
             except (ValueError, TypeError):
-                msg_handler.input_fail(type_val_err_msg)
+                logger.log("FAILURE", "Input could not be converted to int.")
                 max_col = None
             if (isinstance(max_col, int)) and (max_col <= 0):
-                msg_handler.input_fail(less_than_one_msg)
+                logger.log("FAILURE", "Input is less than one.")
         max_cols[(input_file, ws_name)] = max_col
     xlsx_file.close()
 
@@ -177,7 +184,7 @@ for input_file in file_ws_dict:
 
 # Check if script can be continued.
 if len(min_header_rows) == 0:
-    msg_handler.error("No file contained valid headers.")
+    logger.critical("No file contained valid headers.")
 
 # Temp file list so that keys won't be deleted
 # in the dictionary being parsed.
@@ -191,7 +198,7 @@ for input_file in file_list:
             is_file_used = True
             break
     if not is_file_used:
-        msg_handler.panic(
+        logger.error(
             string.Template("$file contains no valid headers.").substitute(
                 file=input_file
             )
@@ -211,7 +218,7 @@ for input_file in file_ws_dict:
                 is_ws_used = True
                 break
         if not is_ws_used:
-            msg_handler.panic(
+            logger.panic(
                 f"{msg_handler.get_xlsx_id(input_file, ws_name)} contains no valid headers."
             )
             file_ws_dict[input_file].remove(ws_name)
@@ -239,8 +246,8 @@ for input_file in file_ws_dict:
             if cell is None:
                 if start_none == 0:
                     start_none = col_incr
-                msg_handler.warning(
-                    f"Blank header {col_letter+row_str} in {msg_handler.get_xlsx_id(input_file,ws_name)} will be ignored."
+                logger.warning(
+                    f"Blank header {col_letter+row_str} in {msg_handler.get_xlsx_id(input_file, ws_name)} will be ignored."
                 )
             else:
                 if start_none != 0 and not valid_after_none:
@@ -249,27 +256,27 @@ for input_file in file_ws_dict:
         if start_none > 0 and not valid_after_none:
             before_none = start_none - 1
             if before_none == 0:
-                msg_handler.panic(
+                logger.error(
                     string.Template(
                         "Attempted to reduce max column length of $id from $col to 0 due to None in $cell_pos."
-                    ).substitute(
-                        col=max_cols[(input_file, ws_name)],
-                        id=msg_handler.get_xlsx_id(input_file, ws_name),
-                        cell_pos=cell_pos.get_col_letter(start_none)
-                        + str(min_header_rows[(input_file, ws_name)]),
                     )
+                ).substitute(
+                    col=max_cols[(input_file, ws_name)],
+                    id=msg_handler.get_xlsx_id(input_file, ws_name),
+                    cell_pos=cell_pos.get_col_letter(start_none)
+                    + str(min_header_rows[(input_file, ws_name)]),
                 )
             else:
-                msg_handler.info(
+                logger.info(
                     string.Template(
                         "Reducing max column length of $id from $cur_col to $new_col due to None in $cell_pos."
-                    ).substitute(
-                        id=msg_handler.get_xlsx_id(input_file, ws_name),
-                        cur_col=str(max_cols[(input_file, ws_name)]),
-                        new_col=str(before_none),
-                        cell_pos=cell_pos.get_col_letter(start_none)
-                        + str(min_header_rows[(input_file, ws_name)]),
                     )
+                ).substitute(
+                    id=msg_handler.get_xlsx_id(input_file, ws_name),
+                    cur_col=str(max_cols[(input_file, ws_name)]),
+                    new_col=str(before_none),
+                    cell_pos=cell_pos.get_col_letter(start_none)
+                    + str(min_header_rows[(input_file, ws_name)]),
                 )
                 max_cols[(input_file, ws_name)] = before_none
     xlsx_file.close()
@@ -315,7 +322,7 @@ with progress.bar.IncrementalBar(
                     col_letter = cell_pos.get_col_letter(col)
                     cell = ws[col_letter + row_str].value
                     if cell == "#REF!":
-                        msg_handler.warning(
+                        logger.warning(
                             string.Template(
                                 'Unknown reference found at $cell_pos in $id. Defaulting to "unknown".'
                             ).substitute(

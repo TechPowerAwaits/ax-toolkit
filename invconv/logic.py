@@ -1,12 +1,15 @@
 # Copyright 2021 Richard Johnston <techpowerawaits@outlook.com>
 # SPDX-license-identifier: 0BSD
 
-import axm.output
-import common
-import msg_handler
 import csv
 import string
 import sys
+
+from loguru import logger
+
+import axm.output
+import common
+import msg_handler
 
 # In some cases, functions
 # might be run multiple times
@@ -70,12 +73,10 @@ used_product_names = set()
 def get_name(name):
     global used_product_names
     if name in used_product_names:
-        msg_handler.warning(
+        logger.warning(
             string.Template(
-                "Product name $name has already been defined in $id."
-            ).substitute(
-                name=name, id=msg_handler.get_xlsx_id(file_name, section_name)
-            ),
+                'Product name "$name" has already been defined in $id.'
+            ).substitute(name=name, id=msg_handler.get_xlsx_id(file_name, section_name))
         )
     used_product_names.add(name)
     return name
@@ -217,9 +218,9 @@ def get_price(cell_val):
     # depending on the value in the cell.
     highest_index = len(price_str) - 1
     if len(price_str) == 0 or price_str.rfind(".") == highest_index:
-        msg_handler.warning(
+        logger.warning(
             string.Template(
-                "Cell in $id has $val and not cost. Defaulting to 0.00."
+                'Cell in $id has "$val" and not cost. Defaulting to 0.00.'
             ).substitute(
                 id=msg_handler.get_xlsx_id(file_name, section_name), val=cell_val
             )

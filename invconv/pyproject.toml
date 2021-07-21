@@ -9,6 +9,7 @@ license = "0BSD"
 python = "^3.9"
 openpyxl = "^3.0.7"
 progress = "^1.6"
+loguru = "^0.5.3"
 
 [tool.poetry.dev-dependencies]
 
