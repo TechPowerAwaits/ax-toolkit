@@ -9,14 +9,15 @@ from loguru import logger
 
 import common
 
-# Default error code that is returned
-# in case of a fatal error.
-ERROR_CODE = 1
-# Critical system exit handler.
-critical_id = -1
 # Default log handler
 # (included with loguru)
 DEFAULT_ID = 0
+
+# Default error code
+# to exit with if user
+# decides to exit script
+# during is_continue().
+USER_ERROR_CODE = 2
 
 # A filter is needed to make sure only one level is used
 # per sink.
@@ -31,7 +32,6 @@ def _lev_filter(lev):
 
 
 def init():
-    global critical_id
     # Default loguru handler sends everything to stderr,
     # which is not desired. Rather only errors and
     # critical errors should be outputted to stderr.
@@ -105,21 +105,11 @@ def init():
         filter=_lev_filter("CRITICAL"),
         level="CRITICAL",
     )
-    # Need to catch critical errors after everything has been logged and
-    # exit. The handler id is recorded so that it can be removed and
-    # readded when file logging is added.
-    critical_id = logger.add(
-        lambda msg: sys.exit(ERROR_CODE),
-        filter=_lev_filter("CRITICAL"),
-        level="CRITICAL",
-    )
 
 
 # Enables everything to get
 # logged to a file.
 def set_log(logfile):
-    global critical_id
-
     # Debug messages should not even be sent to log file
     # unless debugging is enabled.
     def filter_debug(record):
@@ -135,15 +125,6 @@ def set_log(logfile):
         diagnose=common.is_debug,
         filter=filter_debug,
         errors="replace",
-    )
-    # Have exiting after critical error happen after
-    # everything has been written to log file.
-    if critical_id > -1:
-        logger.remove(critical_id)
-    critical_id = logger.add(
-        lambda msg: sys.exit(ERROR_CODE),
-        filter=_lev_filter("CRITICAL"),
-        level="CRITICAL",
     )
 
 
@@ -176,7 +157,7 @@ def does_continue():
     response = input()
     if response.lower() == "y" or response.lower() == "yes":
         logger.info("Script has not been continued.")
-        sys.exit(ERROR_CODE)
+        sys.exit(USER_ERROR_CODE)
     print(os.linesep, os.linesep, end="", file=sys.stderr)
 
 

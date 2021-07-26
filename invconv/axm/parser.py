@@ -3,7 +3,7 @@
 
 import axm.common
 import axm.command
-from axm.exceptions import axm_operator_not_found
+from axm.exceptions import AxmOperatorNotFound
 import axm.operator
 import axm.scheduler
 import axm.utils
@@ -62,7 +62,7 @@ def parse(axm_fptr):
                         # are looked at again.
                         index = 0
             if not is_oper_found:
-                raise axm_operator_not_found(line)
+                raise AxmOperatorNotFound(line)
 
 
 # Processes all the things that need to be processed.

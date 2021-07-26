@@ -15,6 +15,7 @@ import axm.parser
 import axm.utils
 import cell_pos
 import common
+from exceptions import InvconvMissingHeaders
 import logic
 import msg_handler
 
@@ -184,7 +185,7 @@ for input_file in file_ws_dict:
 
 # Check if script can be continued.
 if len(min_header_rows) == 0:
-    logger.critical("No file contained valid headers.")
+    raise InvconvMissingHeaders
 
 # Temp file list so that keys won't be deleted
 # in the dictionary being parsed.

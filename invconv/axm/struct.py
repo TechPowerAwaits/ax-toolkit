@@ -4,7 +4,7 @@
 import collections
 
 import axm.common
-from axm.exceptions import axm_name_exists, axm_invalid_name
+from axm.exceptions import AxmNameExists, AxmInvalidName
 import axm.utils
 
 struct_tuple = collections.namedtuple("struct_tuple", ("check_func", "parse_func"))
@@ -30,9 +30,9 @@ ALL_STRUCTS = "*"
 def add(name, check_func, parse_func):
     global _struct_dict
     if name == ALL_STRUCTS:
-        raise axm_invalid_name(name)
+        raise AxmInvalidName(name)
     if name in _struct_dict:
-        raise axm_name_exists(name)
+        raise AxmNameExists(name)
     _struct_dict[name] = struct_tuple(check_func, parse_func)
 
 

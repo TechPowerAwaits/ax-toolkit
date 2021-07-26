@@ -3,8 +3,7 @@
 import collections
 import string
 
-from loguru import logger
-
+from exceptions import InvconvUnsupportedDataFile
 import ini
 
 axelor_csv_columns = {}
@@ -41,11 +40,7 @@ def init(fptr):
 
     data_format_version = data_parser.getint("INFO", "INVCONV_FORMAT")
     if data_format_version != SUPPORTED_FORMAT_VER:
-        logger.critical(
-            string.Template(
-                "Data format version $format_ver is unsupported."
-            ).substitute(format_ver=data_format_version)
-        )
+        raise InvconvUnsupportedDataFile(data_format_version, SUPPORTED_FORMAT_VER)
     axelor_csv_type = data_parser["INFO"]["TYPE"]
     axcol_sect_name = string.Template("$type COLUMNS").substitute(type=axelor_csv_type)
     for key in data_parser[axcol_sect_name]:
