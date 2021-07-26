@@ -5,11 +5,11 @@ import collections
 
 import axm.common
 from axm.exceptions import (
-    axm_command_not_recognized,
-    axm_invalid_command_syntax,
-    axm_invalid_ver,
-    axm_name_exists,
-    axm_unexpected_command,
+    AxmCommandNotRecognized,
+    AxmInvalidSyntax,
+    AxmInvalidVer,
+    AxmNameExists,
+    AxmUnexpectedCommand,
 )
 import axm.scheduler
 import axm.struct
@@ -52,7 +52,7 @@ def verify(line):
             tmp_deque.appendleft('"')
             tmp_deque.append('"')
         command_name = "".join(tmp_deque)
-        raise axm_command_not_recognized(command_name)
+        raise AxmCommandNotRecognized(command_name)
     return False
 
 
@@ -72,7 +72,7 @@ def add(name, check_func, action_func):
     name = name.upper().removeprefix(COMMAND_PREFIX)
     for item in _command_list:
         if item.name == name:
-            raise axm_name_exists(name)
+            raise AxmNameExists(name)
     _command_list.append(command_tuple(name, check_func, action_func))
 
 
@@ -97,24 +97,25 @@ def _check_axm(line):
         if axm.struct.get("float").check_func(test_line):
             return True
         # It must have invalid syntax.
-        raise axm_invalid_command_syntax(COMMAND_PREFIX + "AXM")
+        raise AxmInvalidSyntax(COMMAND_PREFIX + "AXM", "command")
     return False
 
 
 def _act_axm(line):
-    if _check_axm(line) and not axm.common.version_checked:
+    if _check_axm(line):
+        if axm.common.version_checked:
+            raise AxmUnexpectedCommand(COMMAND_PREFIX + "AXM")
         stripped_line = line.replace(COMMAND_PREFIX + "AXM", "").lstrip()
         ver_float = axm.struct.get("float").parse_func(stripped_line)
         major_ver = ver_float.whole
         minor_ver = ver_float.remainder
         if (
-            minor_ver > axm.common.SUPPORTED_AXM_VER.minor
-            and not major_ver == axm.common.SUPPORTED_AXM_VER.major
+            minor_ver <= axm.common.SUPPORTED_AXM_VER.minor
+            and major_ver == axm.common.SUPPORTED_AXM_VER.major
         ):
-            axm_invalid_ver(str(ver_float), str(axm.common.SUPPORTED_AXM_VER))
             axm.common.version_checked = True
-    else:
-        raise axm_unexpected_command(COMMAND_PREFIX + "AXM")
+        else:
+            raise AxmInvalidVer(str(ver_float), str(axm.common.SUPPORTED_AXM_VER))
 
 
 if get("AXM") is None:
@@ -128,13 +129,13 @@ def _check_sect(line):
         if axm.struct.get("sect").check_func(test_line):
             return True
         # It must have invalid syntax.
-        raise axm_invalid_command_syntax(COMMAND_PREFIX + "SECT")
+        raise AxmInvalidSyntax(COMMAND_PREFIX + "SECT", "command")
     return False
 
 
 def _act_sect(line):
     if not _check_sect(line):
-        axm_unexpected_command(COMMAND_PREFIX + "SECT")
+        raise AxmUnexpectedCommand(COMMAND_PREFIX + "SECT")
     stripped_line = line.replace(COMMAND_PREFIX + "SECT", "").lstrip()
     file_section_tuple = axm.struct.get("sect").parse_func(stripped_line)
     axm.common.cur_file = file_section_tuple[0]
@@ -165,7 +166,7 @@ def _check_del(line):
         # then there is a syntax error.
         for struct_types in axm.struct.get(axm.struct.ALL_STRUCTS):
             if struct_types.check_func(test_line):
-                raise axm_invalid_command_syntax(COMMAND_PREFIX + "DEL")
+                raise AxmInvalidSyntax(COMMAND_PREFIX + "DEL", "command")
         return True
     return False
 
@@ -196,7 +197,7 @@ def _act_del(line):
                 break
         if not col_exists:
             # The variable it is try to delete does not exists.
-            raise axm_unexpected_command(COMMAND_PREFIX + "DEL")
+            raise AxmUnexpectedCommand(COMMAND_PREFIX + "DEL")
 
 
 # Actually removes the variables marked for deletion.
@@ -230,13 +231,13 @@ def _check_avoid(line):
         if axm.struct.get("sect").check_func(test_line):
             return True
         # The !AVOID command requires the sect structure.
-        raise axm_invalid_command_syntax(COMMAND_PREFIX + "AVOID")
+        raise AxmInvalidSyntax(COMMAND_PREFIX + "AVOID", "command")
     return False
 
 
 def _act_avoid(line):
     if not _check_avoid(line):
-        axm_unexpected_command(COMMAND_PREFIX + "AVOID")
+        raise AxmUnexpectedCommand(COMMAND_PREFIX + "AVOID")
     stripped_line = line.replace(COMMAND_PREFIX + "AVOID", "").lstrip()
     file_section_tuple = axm.struct.get("sect").parse_func(stripped_line)
     axm.common.avoid_list.append(file_section_tuple)

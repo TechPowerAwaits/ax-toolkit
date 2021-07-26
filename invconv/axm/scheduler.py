@@ -4,7 +4,7 @@
 # Everything scheduled runs as part of axm.parser.finalize() function.
 
 import collections
-from axm.exceptions import axm_mean_val
+from axm.exceptions import AxmMeanValError
 
 # Constants.
 NICE_INHERIT = 0
@@ -37,7 +37,7 @@ class _scheduler_internal_def:
         else:
             self.param_list = param_list
         if nice < 0:
-            axm_mean_val(nice)
+            raise AxmMeanValError(nice)
         self.nice = nice
 
     def convert(self):

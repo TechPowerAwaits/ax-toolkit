@@ -5,7 +5,7 @@ import string
 import types
 
 import axm.common
-from axm.exceptions import axm_invalid_name, axm_name_exists, axm_operator_no_effect
+from axm.exceptions import AxmInvalidName, AxmNameExists, AxmOperatorNoEffect
 import axm.scheduler
 import axm.utils
 
@@ -104,9 +104,9 @@ ALL_OPERATORS = "*"
 def add(name, symbol, find_func=None, parse_func=None, action_func=None):
     global _oper_dict
     if name == ALL_OPERATORS:
-        raise axm_invalid_name
+        raise AxmInvalidName
     if name in _oper_dict:
-        raise axm_name_exists
+        raise AxmNameExists
     _oper_dict[name] = oper_tuple(symbol, find_func, parse_func, action_func)
 
 
@@ -282,7 +282,7 @@ def _act_delegator(line, parse_func):
         ] = possible_input_cols
         is_valid_oper = True
     if not is_valid_oper:
-        raise axm_operator_no_effect(f"delegator ({_DELEGATOR_SYMBOL})")
+        raise AxmOperatorNoEffect(f"delegator ({_DELEGATOR_SYMBOL})")
 
 
 if not symbol_exists(_DELEGATOR_SYMBOL):

@@ -5,9 +5,9 @@ import collections
 import os
 
 from axm.exceptions import (
-    axm_expected_var_not_found,
-    axm_invalid_file_section,
-    axm_source_not_iterable,
+    AxmExpectedVarNotFound,
+    AxmInvalidFileSection,
+    AxmSourceNotIterable,
 )
 import axm.scheduler
 
@@ -180,7 +180,7 @@ def set_file_section_source(*sources):
         if hasattr(source, "__iter__") and len(source) > 0:
             _file_section_set.update(source)
         else:
-            raise axm_source_not_iterable(source)
+            raise AxmSourceNotIterable(source)
 
 
 def get_file_section_set():
@@ -285,7 +285,7 @@ def prep_valid_col_dict():
         proper_file_section = get_file_sect(file_name, section_name)
         if proper_file_section not in avoid_list:
             if proper_file_section not in out_input_col:
-                raise axm_invalid_file_section(file_name, section_name)
+                raise AxmInvalidFileSection(file_name, section_name)
             # Have values invalid_col_dict default to None
             # if no valid input column is found.
             if proper_file_section not in valid_col_dict:
@@ -382,26 +382,19 @@ def purge_valid_col():
 
 # Check if mapping in valid_col_dict is None and has no excuse.
 def check_valid_col():
+    # Will be passed to exception
+    # if not empty.
+    missing_map_dict = {}
     for file_section in valid_col_dict:
         for output_col in valid_col_dict[file_section]:
-            # First check if the valid input column for output_col is None.
-            # If it is, make sure the file_section is not in the avoid_list.
-            # (Otherwise, the values in the file-section pair are supposed
-            # to be ignored.) Then finally, check if file-section is not in
-            # opt_dict (since if any values for that file-section pair were being ignored,
-            # it would be in the dictionary). If it does exist, but the output column value does
-            # not, that still indicates that a required mapping has not been found.
-            if (
-                valid_col_dict[file_section][output_col] is None
-                and file_section not in avoid_list
-                and (
-                    file_section not in opt_dict
-                    or output_col not in opt_dict[file_section]
-                )
-            ):
-                raise axm_expected_var_not_found(
-                    output_col, file_section[0], file_section[1]
-                )
+            # All excusable missing mappings have already
+            # been removed in purge_valid_col().
+            if valid_col_dict[file_section][output_col] is None:
+                if file_section not in missing_map_dict:
+                    missing_map_dict[file_section] = []
+                missing_map_dict[file_section].append(output_col)
+    if missing_map_dict:
+        raise AxmExpectedVarNotFound(missing_map_dict)
 
 
 axm.scheduler.add(prep_valid_col_dict, axm.scheduler.NICE_VALID_COL)
