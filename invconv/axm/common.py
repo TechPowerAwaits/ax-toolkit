@@ -4,12 +4,22 @@
 import collections
 import os
 
-from axm.exceptions import (
-    AxmExpectedVarNotFound,
-    AxmInvalidFileSection,
-    AxmSourceNotIterable,
-)
-import axm.scheduler
+try:
+    from axm.exceptions import (
+        AxmExpectedVarNotFound,
+        AxmInvalidFileSection,
+        AxmSourceNotIterable,
+    )
+    import axm.scheduler as scheduler
+    import axm.utils as utils
+except ModuleNotFoundError:
+    from invconv.axm.exceptions import (
+        AxmExpectedVarNotFound,
+        AxmInvalidFileSection,
+        AxmSourceNotIterable,
+    )
+    import invconv.axm.scheduler as scheduler
+    import invconv.axm.utils as utils
 
 # The file section information.
 file_fallback = "common"
@@ -75,7 +85,7 @@ def specialize(table):
     # Since this is a more generic function,
     # need to check whether table is dict or list.
     # If it is a dict, need to know what should be inside it.
-    table_type = axm.utils.get_table_type(table)
+    table_type = utils.get_table_type(table)
 
     for file_section_pair in table:
         section_name = file_section_pair[1]
@@ -397,10 +407,10 @@ def check_valid_col():
         raise AxmExpectedVarNotFound(missing_map_dict)
 
 
-axm.scheduler.add(prep_valid_col_dict, axm.scheduler.NICE_VALID_COL)
-axm.scheduler.add(find_valid_col, axm.scheduler.NICE_VALID_COL)
-axm.scheduler.add(purge_valid_col, axm.scheduler.NICE_VALID_COL)
-axm.scheduler.add(check_valid_col, axm.scheduler.NICE_VALID_COL)
+scheduler.add(prep_valid_col_dict, scheduler.NICE_VALID_COL)
+scheduler.add(find_valid_col, scheduler.NICE_VALID_COL)
+scheduler.add(purge_valid_col, scheduler.NICE_VALID_COL)
+scheduler.add(check_valid_col, scheduler.NICE_VALID_COL)
 
 INPUT_COL_VAR = "$input_col"
 OUTPUT_COL_VAR = "$output_col"
@@ -424,4 +434,4 @@ def set_output():
                 column_output_dict[file_section][output_col] = OUTPUT_TXT_VAR
 
 
-axm.scheduler.add(set_output, axm.scheduler.NICE_OUT_STRING)
+scheduler.add(set_output, scheduler.NICE_OUT_STRING)

@@ -3,8 +3,12 @@
 import collections
 import string
 
-from exceptions import InvconvUnsupportedDataFile
-import ini
+try:
+    from exceptions import InvconvUnsupportedDataFile
+    import ini
+except ModuleNotFoundError:
+    from invconv.exceptions import InvconvUnsupportedDataFile
+    import invconv.ini as ini
 
 axelor_csv_columns = {}
 
