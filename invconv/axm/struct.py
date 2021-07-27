@@ -3,9 +3,14 @@
 
 import collections
 
-import axm.common
-from axm.exceptions import AxmNameExists, AxmInvalidName
-import axm.utils
+try:
+    import axm.common as common
+    from axm.exceptions import AxmNameExists, AxmInvalidName
+    import axm.utils as utils
+except ModuleNotFoundError:
+    import invconv.axm.common as common
+    from invconv.axm.exceptions import AxmNameExists, AxmInvalidName
+    import invconv.axm.utils as utils
 
 struct_tuple = collections.namedtuple("struct_tuple", ("check_func", "parse_func"))
 
@@ -70,7 +75,7 @@ def _check_float(line):
 
 def _parse_float(line):
     if _check_float(line):
-        tmp_list = axm.utils.split_n_strip(line, ".")
+        tmp_list = utils.split_n_strip(line, ".")
         tuple_impl = float_tuple(whole=int(tmp_list[0]), remainder=int(tmp_list[1]))
         return tuple_impl
     return None
@@ -130,7 +135,7 @@ def _parse_sect(line):
             # Don't need to worry about section.
             file_section = (
                 tmp_line.removeprefix("FILE:").lstrip(),
-                axm.common.sect_fallback,
+                common.sect_fallback,
             )
         else:
             # Lists are easier to manipulate than string.

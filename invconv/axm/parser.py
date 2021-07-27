@@ -1,16 +1,24 @@
 # Copyright 2021 Richard Johnston <techpowerawaits@outlook.com>
 # SPDX-license-identifier: 0BSD
 
-import axm.common
-import axm.command
-from axm.exceptions import AxmOperatorNotFound
-import axm.operator
-import axm.scheduler
-import axm.utils
+try:
+    import axm.common as common
+    import axm.command as command
+    from axm.exceptions import AxmOperatorNotFound
+    import axm.operator as operator
+    import axm.scheduler as scheduler
+    import axm.utils as utils
+except ModuleNotFoundError:
+    import invconv.axm.common as common
+    import invconv.axm.command as command
+    from invconv.axm.exceptions import AxmOperatorNotFound
+    import invconv.axm.operator as operator
+    import invconv.axm.scheduler as scheduler
+    import invconv.axm.utils as utils
 
 # Copies a list of input columns for later processing.
 def init(input_col):
-    axm.common.input_col_dict = input_col
+    common.input_col_dict = input_col
 
 
 def parse(axm_fptr):
@@ -19,7 +27,7 @@ def parse(axm_fptr):
     # is stripped.
     line = axm_fptr.readline().replace("\n", " ").strip()
     if "#" in line:
-        line = axm.utils.split_n_strip(line, "#")
+        line = utils.split_n_strip(line, "#")
         # If the entire line is a comment,
         # split_n_strip() will return an
         # empty string in the first position
@@ -28,8 +36,8 @@ def parse(axm_fptr):
         line = line[0]
     # Guards against blank lines and commented lines.
     if len(line) > 0:
-        if axm.command.verify(line):
-            for command_type in axm.command.get(axm.command.ALL_COMMANDS):
+        if command.verify(line):
+            for command_type in command.get(command.ALL_COMMANDS):
                 if command_type.check_func(line):
                     # All action functions for every
                     # command must remove the command prefix
@@ -45,7 +53,7 @@ def parse(axm_fptr):
             # operators the only logical choice for existance in a
             # line.
             is_oper_found = False
-            oper_list = axm.operator.get(axm.operator.ALL_OPERATORS)
+            oper_list = operator.get(operator.ALL_OPERATORS)
             index = 0
             oper_max_pos = len(oper_list) - 1
             while index <= oper_max_pos:
@@ -67,7 +75,7 @@ def parse(axm_fptr):
 
 # Processes all the things that need to be processed.
 def finalize():
-    func_deque = axm.scheduler.get(axm.scheduler.ALL_SCHEDULED)
+    func_deque = scheduler.get(scheduler.ALL_SCHEDULED)
     func_deque_len = len(func_deque)
     incr = 0
     while incr < func_deque_len:

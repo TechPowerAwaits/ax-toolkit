@@ -1,7 +1,10 @@
 # Copyright 2021 Richard Johnston <techpowerawaits@outlook.com>
 # SPDX-license-identifier: 0BSD
 
-import axm.common
+try:
+    import axm.common as common
+except ModuleNotFoundError:
+    import invconv.axm.common as common
 
 # Checks if the input column name matches the valid
 # input column for a given output column. If the valid input
@@ -16,20 +19,20 @@ import axm.common
 def is_valid_input_col(file_section, output_col, input_col):
     # Need to conform the file-section name sheme used internally in the script
     # to the scheme used by the AXM file.
-    proper_file_section = axm.common.get_file_sect(file_section[0], file_section[1])
+    proper_file_section = common.get_file_sect(file_section[0], file_section[1])
     # Ensure file-section is in column_output_dict (where the strings to output
     # are located). This automatically excludes file-section pairs from the
     # avoid list.
-    if proper_file_section in axm.common.column_output_dict:
-        if proper_file_section not in axm.common.valid_col_dict:
+    if proper_file_section in common.column_output_dict:
+        if proper_file_section not in common.valid_col_dict:
             return True
-        if output_col not in axm.common.column_output_dict[proper_file_section]:
+        if output_col not in common.column_output_dict[proper_file_section]:
             return True
-        if output_col not in axm.common.valid_col_dict[proper_file_section]:
+        if output_col not in common.valid_col_dict[proper_file_section]:
             return True
-        if axm.common.valid_col_dict[proper_file_section][output_col] is None:
+        if common.valid_col_dict[proper_file_section][output_col] is None:
             return True
-        if axm.common.valid_col_dict[proper_file_section][output_col] == input_col:
+        if common.valid_col_dict[proper_file_section][output_col] == input_col:
             return True
     return False
 
@@ -37,27 +40,27 @@ def is_valid_input_col(file_section, output_col, input_col):
 def string(file_section, output_col, input_txt, output_func=None):
     # Need to conform the file-section name sheme used internally in the script
     # to the scheme used by the AXM file.
-    proper_file_section = axm.common.get_file_sect(file_section[0], file_section[1])
+    proper_file_section = common.get_file_sect(file_section[0], file_section[1])
     out_str = ""
     # If the file section and/or output column is missing, something must have been deleted or avoided.
     # In that case, it will attempt passing an empty quote to output_func in the hopes of
     # getting some fallback value.
     if (
-        proper_file_section in axm.common.column_output_dict
-        and output_col in axm.common.column_output_dict[proper_file_section]
+        proper_file_section in common.column_output_dict
+        and output_col in common.column_output_dict[proper_file_section]
     ):
-        out_str = axm.common.column_output_dict[proper_file_section][output_col]
-        out_str = out_str.replace(axm.common.INPUT_TXT_VAR, input_txt)
+        out_str = common.column_output_dict[proper_file_section][output_col]
+        out_str = out_str.replace(common.INPUT_TXT_VAR, input_txt)
         # Try to pass the input_txt to output_func to get the proper output.
         # If a function is not provided, fallback to input text so that no
         # content is lost.
-        if axm.common.OUTPUT_TXT_VAR in out_str:
+        if common.OUTPUT_TXT_VAR in out_str:
             if output_func is not None:
                 out_str = out_str.replace(
-                    axm.common.OUTPUT_TXT_VAR, str(output_func(input_txt))
+                    common.OUTPUT_TXT_VAR, str(output_func(input_txt))
                 )
             else:
-                out_str = out_str.replace(axm.common.OUTPUT_TXT_VAR, input_txt)
+                out_str = out_str.replace(common.OUTPUT_TXT_VAR, input_txt)
     else:
         if output_func is not None:
             out_str = output_func("")

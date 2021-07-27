@@ -3,16 +3,28 @@
 
 import collections
 
-import axm.common
-from axm.exceptions import (
-    AxmCommandNotRecognized,
-    AxmInvalidSyntax,
-    AxmInvalidVer,
-    AxmNameExists,
-    AxmUnexpectedCommand,
-)
-import axm.scheduler
-import axm.struct
+try:
+    import axm.common as common
+    from axm.exceptions import (
+        AxmCommandNotRecognized,
+        AxmInvalidSyntax,
+        AxmInvalidVer,
+        AxmNameExists,
+        AxmUnexpectedCommand,
+    )
+    import axm.scheduler as scheduler
+    import axm.struct as struct
+except ModuleNotFoundError:
+    import invconv.axm.common as common
+    from invconv.axm.exceptions import (
+        AxmCommandNotRecognized,
+        AxmInvalidSyntax,
+        AxmInvalidVer,
+        AxmNameExists,
+        AxmUnexpectedCommand,
+    )
+    import invconv.axm.scheduler as scheduler
+    import invconv.axm.struct as struct
 
 command_tuple = collections.namedtuple(
     "command_tuple", ("name", "check_func", "action_func")
@@ -57,10 +69,9 @@ def verify(line):
 
 
 # Commands can change the target
-# file and section (usually axm.common).
-# They can modify dictionaries and
-# variables, but they never directly
-# modify strings.
+# file and section. They can
+# modify dictionaries and variables,
+# but they never directly modify strings.
 
 COMMAND_PREFIX = "!"
 _command_list = []
@@ -94,7 +105,7 @@ def _check_axm(line):
     if COMMAND_PREFIX + "AXM" in test_line:
         test_line = test_line.replace(COMMAND_PREFIX + "AXM", "").lstrip()
         # Must have a float.
-        if axm.struct.get("float").check_func(test_line):
+        if struct.get("float").check_func(test_line):
             return True
         # It must have invalid syntax.
         raise AxmInvalidSyntax(COMMAND_PREFIX + "AXM", "command")
@@ -103,19 +114,19 @@ def _check_axm(line):
 
 def _act_axm(line):
     if _check_axm(line):
-        if axm.common.version_checked:
+        if common.version_checked:
             raise AxmUnexpectedCommand(COMMAND_PREFIX + "AXM")
         stripped_line = line.replace(COMMAND_PREFIX + "AXM", "").lstrip()
-        ver_float = axm.struct.get("float").parse_func(stripped_line)
+        ver_float = struct.get("float").parse_func(stripped_line)
         major_ver = ver_float.whole
         minor_ver = ver_float.remainder
         if (
-            minor_ver <= axm.common.SUPPORTED_AXM_VER.minor
-            and major_ver == axm.common.SUPPORTED_AXM_VER.major
+            minor_ver <= common.SUPPORTED_AXM_VER.minor
+            and major_ver == common.SUPPORTED_AXM_VER.major
         ):
-            axm.common.version_checked = True
+            common.version_checked = True
         else:
-            raise AxmInvalidVer(str(ver_float), str(axm.common.SUPPORTED_AXM_VER))
+            raise AxmInvalidVer(str(ver_float), str(common.SUPPORTED_AXM_VER))
 
 
 if get("AXM") is None:
@@ -126,7 +137,7 @@ def _check_sect(line):
     test_line = line.lstrip()
     if COMMAND_PREFIX + "SECT" in test_line:
         test_line.replace(COMMAND_PREFIX + "SECT", "").lstrip()
-        if axm.struct.get("sect").check_func(test_line):
+        if struct.get("sect").check_func(test_line):
             return True
         # It must have invalid syntax.
         raise AxmInvalidSyntax(COMMAND_PREFIX + "SECT", "command")
@@ -137,9 +148,9 @@ def _act_sect(line):
     if not _check_sect(line):
         raise AxmUnexpectedCommand(COMMAND_PREFIX + "SECT")
     stripped_line = line.replace(COMMAND_PREFIX + "SECT", "").lstrip()
-    file_section_tuple = axm.struct.get("sect").parse_func(stripped_line)
-    axm.common.cur_file = file_section_tuple[0]
-    axm.common.cur_sect = file_section_tuple[1]
+    file_section_tuple = struct.get("sect").parse_func(stripped_line)
+    common.cur_file = file_section_tuple[0]
+    common.cur_sect = file_section_tuple[1]
 
 
 if get("SECT") is None:
@@ -164,7 +175,7 @@ def _check_del(line):
         # The !DEL command only supports variables.
         # Therefore, if a struct is found matching whats in the line,
         # then there is a syntax error.
-        for struct_types in axm.struct.get(axm.struct.ALL_STRUCTS):
+        for struct_types in struct.get(struct.ALL_STRUCTS):
             if struct_types.check_func(test_line):
                 raise AxmInvalidSyntax(COMMAND_PREFIX + "DEL", "command")
         return True
@@ -174,11 +185,11 @@ def _check_del(line):
 def _act_del(line):
     if _check_del(line):
         col_name = line.replace(COMMAND_PREFIX + "DEL", "").lstrip()
-        cur_file_sect = (axm.common.cur_file, axm.common.cur_sect)
-        if cur_file_sect not in axm.common.del_dict:
-            axm.common.del_dict[cur_file_sect] = []
-        cur_file_generic_sect = (axm.common.cur_file, axm.common.sect_fallback)
-        generic_file_sect = (axm.common.file_fallback, axm.common.sect_fallback)
+        cur_file_sect = (common.cur_file, common.cur_sect)
+        if cur_file_sect not in common.del_dict:
+            common.del_dict[cur_file_sect] = []
+        cur_file_generic_sect = (common.cur_file, common.sect_fallback)
+        generic_file_sect = (common.file_fallback, common.sect_fallback)
         # Need to check if the variable to be deleted actually exists.
         # This command will be run before anything is inherited, so checking
         # more generic file-section pairs is required.
@@ -186,13 +197,13 @@ def _act_del(line):
         col_exists = False
         for file_section in file_sect_list:
             if (
-                file_section in axm.common.out_input_col
-                and col_name in axm.common.out_input_col[file_section]
+                file_section in common.out_input_col
+                and col_name in common.out_input_col[file_section]
             ) or (
-                file_section in axm.common.column_output_dict
-                and col_name in axm.common.column_output_dict[file_section]
+                file_section in common.column_output_dict
+                and col_name in common.column_output_dict[file_section]
             ):
-                axm.common.del_dict[cur_file_sect].append(col_name)
+                common.del_dict[cur_file_sect].append(col_name)
                 col_exists = True
                 break
         if not col_exists:
@@ -202,33 +213,29 @@ def _act_del(line):
 
 # Actually removes the variables marked for deletion.
 def _post_del():
-    for file_section in axm.common.del_dict:
-        if file_section in axm.common.out_input_col:
-            for output_col in axm.common.del_dict[file_section]:
-                if output_col in axm.common.out_input_col[file_section]:
-                    del axm.common.out_input_col[file_section][output_col]
-            if len(axm.common.out_input_col[file_section]) == 0:
+    for file_section in common.del_dict:
+        if file_section in common.out_input_col:
+            for output_col in common.del_dict[file_section]:
+                if output_col in common.out_input_col[file_section]:
+                    del common.out_input_col[file_section][output_col]
+            if len(common.out_input_col[file_section]) == 0:
                 # Add to avoid_list so that section can be removed
                 # later.
-                axm.common.avoid_list.append(file_section)
+                common.avoid_list.append(file_section)
 
 
 if get("DEL") is None:
     add("DEL", _check_del, _act_del)
-    axm.scheduler.add(
-        axm.common.specialize, axm.scheduler.NICE_INHERIT, [axm.common.del_dict]
-    )
-    axm.scheduler.add(
-        axm.common.inherit, axm.scheduler.NICE_INHERIT, [axm.common.del_dict]
-    )
-    axm.scheduler.add(_post_del, axm.scheduler.NICE_DEL_N_AVOID)
+    scheduler.add(common.specialize, scheduler.NICE_INHERIT, [common.del_dict])
+    scheduler.add(common.inherit, scheduler.NICE_INHERIT, [common.del_dict])
+    scheduler.add(_post_del, scheduler.NICE_DEL_N_AVOID)
 
 # Similar to the !DEL command, except works on sect structures.
 def _check_avoid(line):
     test_line = line.lstrip()
     if COMMAND_PREFIX + "AVOID" in test_line:
         test_line = test_line.replace(COMMAND_PREFIX + "AVOID", "").lstrip()
-        if axm.struct.get("sect").check_func(test_line):
+        if struct.get("sect").check_func(test_line):
             return True
         # The !AVOID command requires the sect structure.
         raise AxmInvalidSyntax(COMMAND_PREFIX + "AVOID", "command")
@@ -239,13 +246,13 @@ def _act_avoid(line):
     if not _check_avoid(line):
         raise AxmUnexpectedCommand(COMMAND_PREFIX + "AVOID")
     stripped_line = line.replace(COMMAND_PREFIX + "AVOID", "").lstrip()
-    file_section_tuple = axm.struct.get("sect").parse_func(stripped_line)
-    axm.common.avoid_list.append(file_section_tuple)
+    file_section_tuple = struct.get("sect").parse_func(stripped_line)
+    common.avoid_list.append(file_section_tuple)
 
 
 # Actually removes the sections from the provided list/dictionary.
 def _post_avoid(table):
-    for section in axm.common.avoid_list:
+    for section in common.avoid_list:
         if section in table:
             if isinstance(table, list):
                 # It is possible that there are multiple
@@ -258,12 +265,6 @@ def _post_avoid(table):
 
 if get("AVOID") is None:
     add("AVOID", _check_avoid, _act_avoid)
-    axm.scheduler.add(
-        axm.common.specialize, axm.scheduler.NICE_INHERIT, [axm.common.avoid_list]
-    )
-    axm.scheduler.add(
-        _post_avoid, axm.scheduler.NICE_DEL_N_AVOID, [axm.common.out_input_col]
-    )
-    axm.scheduler.add(
-        _post_avoid, axm.scheduler.NICE_DEL_N_AVOID, [axm.common.opt_dict]
-    )
+    scheduler.add(common.specialize, scheduler.NICE_INHERIT, [common.avoid_list])
+    scheduler.add(_post_avoid, scheduler.NICE_DEL_N_AVOID, [common.out_input_col])
+    scheduler.add(_post_avoid, scheduler.NICE_DEL_N_AVOID, [common.opt_dict])

@@ -6,6 +6,17 @@ class InvconvException(Exception):
     pass
 
 
+class InvconvArgumentError(InvconvException):
+    def __init__(self):
+        self.message = "The provided arguments are invalid"
+        super().__init__(self.message)
+
+
+class InvconvInvalidFileType(InvconvException):
+    def __init__(self, type_):
+        self.message = f'The type "{type_}"" contains an invalid underscore'
+
+
 class InvconvMissingHeaders(InvconvException):
     def __init__(self):
         self.message = "No headers were found in any input file"

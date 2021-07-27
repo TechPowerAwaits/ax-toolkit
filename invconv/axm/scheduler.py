@@ -4,7 +4,11 @@
 # Everything scheduled runs as part of axm.parser.finalize() function.
 
 import collections
-from axm.exceptions import AxmMeanValError
+
+try:
+    from axm.exceptions import AxmMeanValError
+except ModuleNotFoundError:
+    from invconv.axm.exceptions import AxmMeanValError
 
 # Constants.
 NICE_INHERIT = 0

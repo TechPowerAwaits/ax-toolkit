@@ -7,7 +7,10 @@ import time
 
 from loguru import logger
 
-import common
+try:
+    import common
+except ModuleNotFoundError:
+    import invconv.common as common
 
 # Default log handler
 # (included with loguru)
@@ -162,5 +165,12 @@ def does_continue():
 
 
 # Usually used within error or warning messages.
-def get_xlsx_id(filepath, ws_name):
-    return filepath + " WS: " + str(ws_name)
+# file_section is a tuple containing the file path
+# and section name, while section_type gives the
+# section divider a name. For example, providing
+# "WS" as section_type with a file path of "file"
+# and a section of test would result in file WS: test.
+def get_id(file_section, section_type="SECTION"):
+    filepath, sectionname = file_section
+    upper_section_type = section_type.upper() + ":"
+    return f"{filepath} {upper_section_type} {str(sectionname)}"

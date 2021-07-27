@@ -4,18 +4,28 @@
 import string
 import types
 
-import axm.common
-from axm.exceptions import AxmInvalidName, AxmNameExists, AxmOperatorNoEffect
-import axm.scheduler
-import axm.utils
+try:
+    import axm.common as common
+    from axm.exceptions import AxmInvalidName, AxmNameExists, AxmOperatorNoEffect
+    import axm.scheduler as scheduler
+    import axm.utils as utils
+except ModuleNotFoundError:
+    import invconv.axm.common as common
+    from invconv.axm.exceptions import (
+        AxmInvalidName,
+        AxmNameExists,
+        AxmOperatorNoEffect,
+    )
+    import invconv.axm.scheduler as scheduler
+    import invconv.axm.utils as utils
 
 
 class oper_tuple:
     def _default_action_func(self, line, parse_func):
         parse_result = parse_func(line)
-        if (axm.common.cur_file, axm.common.cur_sect) not in axm.common.out_input_col:
-            axm.common.out_input_col[(axm.common.cur_file, axm.common.cur_sect)] = {}
-        axm.common.out_input_col[(axm.common.cur_file, axm.common.cur_sect)][
+        if (common.cur_file, common.cur_sect) not in common.out_input_col:
+            common.out_input_col[(common.cur_file, common.cur_sect)] = {}
+        common.out_input_col[(common.cur_file, common.cur_sect)][
             parse_result[0]
         ] = parse_result[1]
 
@@ -55,9 +65,9 @@ class oper_tuple:
         symbol = self.symbol
         return_tuple = (None, None)
         if self.find_func(line):
-            ax_input_map = axm.utils.split_n_strip(line, symbol)
+            ax_input_map = utils.split_n_strip(line, symbol)
             axelor_col_name = ax_input_map[0]
-            input_col_names = axm.utils.split_n_strip(ax_input_map[1], ",")
+            input_col_names = utils.split_n_strip(ax_input_map[1], ",")
             return_tuple = (axelor_col_name, input_col_names)
         return return_tuple
 
@@ -198,9 +208,9 @@ def _act_opt(line, parse_func):
             # itself (without any operators present). Therefore, the
             # search for operators is at an end.
             search_for_opers = False
-    if (axm.common.cur_file, axm.common.cur_sect) not in axm.common.opt_dict:
-        axm.common.opt_dict[(axm.common.cur_file, axm.common.cur_sect)] = []
-    axm.common.opt_dict[(axm.common.cur_file, axm.common.cur_sect)].append(output_col)
+    if (common.cur_file, common.cur_sect) not in common.opt_dict:
+        common.opt_dict[(common.cur_file, common.cur_sect)] = []
+    common.opt_dict[(common.cur_file, common.cur_sect)].append(output_col)
     # Returns the initially parsed string (removed the opt symbol)
     # so that it can replace the string used for other operations
     # in a parser function.
@@ -215,12 +225,8 @@ if not symbol_exists(_OPT_SYMBOL):
         parse_func=_parse_opt,
         action_func=_act_opt,
     )
-    axm.scheduler.add(
-        axm.common.specialize, axm.scheduler.NICE_INHERIT, [axm.common.opt_dict]
-    )
-    axm.scheduler.add(
-        axm.common.inherit, axm.scheduler.NICE_INHERIT, [axm.common.opt_dict]
-    )
+    scheduler.add(common.specialize, scheduler.NICE_INHERIT, [common.opt_dict])
+    scheduler.add(common.inherit, scheduler.NICE_INHERIT, [common.opt_dict])
 
 
 _ASSIGN_SYMBOL = ":"
@@ -231,7 +237,7 @@ _DELEGATOR_SYMBOL = ">"
 # If the importer operator is used on the
 # variable you are delegating to, the
 # user-defined string from
-# axm.common.column_output_dict needs to
+# common.column_output_dict needs to
 # be copied to the other variable.
 def _act_delegator(line, parse_func):
     parsed_str = parse_func(line)
@@ -239,7 +245,7 @@ def _act_delegator(line, parse_func):
     # Multiple delegator vars can be specified at once.
     # In that case, the possible input variables from all
     # of them will be copied over, but only the first valid
-    # string in axm.common.column_output_dict will be.
+    # string in common.column_output_dict will be.
     delegate_vars = parsed_str[1]
     # Need to confirm that something has been copied over. Otherwise,
     # it will raise an exception.
@@ -247,37 +253,28 @@ def _act_delegator(line, parse_func):
     # Need a list to hold all the possible input columns from everywhere else.
     possible_input_cols = []
     for delegate_var in delegate_vars:
-        if (axm.common.cur_file, axm.common.cur_sect) in axm.common.out_input_col:
-            if (
-                delegate_var
-                in axm.common.out_input_col[(axm.common.cur_file, axm.common.cur_sect)]
-            ):
+        if (common.cur_file, common.cur_sect) in common.out_input_col:
+            if delegate_var in common.out_input_col[(common.cur_file, common.cur_sect)]:
                 possible_input_cols.extend(
-                    axm.common.out_input_col[
-                        (axm.common.cur_file, axm.common.cur_sect)
-                    ][delegate_var]
+                    common.out_input_col[(common.cur_file, common.cur_sect)][
+                        delegate_var
+                    ]
                 )
-        if (axm.common.cur_file, axm.common.cur_sect) in axm.common.column_output_dict:
+        if (common.cur_file, common.cur_sect) in common.column_output_dict:
             if (
                 target_var
-                not in axm.common.column_output_dict[
-                    (axm.common.cur_file, axm.common.cur_sect)
-                ]
+                not in common.column_output_dict[(common.cur_file, common.cur_sect)]
                 and delegate_var
-                in axm.common.column_output_dict[
-                    (axm.common.cur_file, axm.common.cur_sect)
-                ]
+                in common.column_output_dict[(common.cur_file, common.cur_sect)]
             ):
-                axm.common.column_output_dict[
-                    (axm.common.cur_file, axm.common.cur_sect)
-                ][target_var] = axm.common.column_output_dict[
-                    (axm.common.cur_file, axm.common.cur_sect)
-                ][
+                common.column_output_dict[(common.cur_file, common.cur_sect)][
+                    target_var
+                ] = common.column_output_dict[(common.cur_file, common.cur_sect)][
                     delegate_var
                 ]
                 is_valid_oper = True
     if len(possible_input_cols) > 0:
-        axm.common.out_input_col[(axm.common.cur_file, axm.common.cur_sect)][
+        common.out_input_col[(common.cur_file, common.cur_sect)][
             target_var
         ] = possible_input_cols
         is_valid_oper = True
@@ -292,32 +289,28 @@ _IMPORTER_SYMBOL = "<"
 
 
 def _parse_importer(line):
-    axcol_string = axm.utils.split_n_strip(line, _IMPORTER_SYMBOL)
-    axcol_name = axcol_string[0]
-    user_given_string = axcol_string[1].removeprefix('"').removesuffix('"')
-    return (axcol_name, user_given_string)
+    outcol_string = utils.split_n_strip(line, _IMPORTER_SYMBOL)
+    outcol_name = outcol_string[0]
+    user_given_string = outcol_string[1].removeprefix('"').removesuffix('"')
+    return (outcol_name, user_given_string)
 
 
 def _act_importer(line, parse_func):
     parsed_val = parse_func(line)
-    axcol_name = parsed_val[0]
+    outcol_name = parsed_val[0]
     user_str = parsed_val[1]
-    if (axm.common.cur_file, axm.common.cur_sect) not in axm.common.column_output_dict:
-        axm.common.column_output_dict[(axm.common.cur_file, axm.common.cur_sect)] = {}
-    axm.common.column_output_dict[(axm.common.cur_file, axm.common.cur_sect)][
-        axcol_name
+    if (common.cur_file, common.cur_sect) not in common.column_output_dict:
+        common.column_output_dict[(common.cur_file, common.cur_sect)] = {}
+    common.column_output_dict[(common.cur_file, common.cur_sect)][
+        outcol_name
     ] = user_str
     # If the user_str doesn't contain a variable depending on input,
-    # add to axm.common.opt_list to prevent the script from complaining
+    # add to common.opt_list to prevent the script from complaining
     # that a valid input column wasn't found.
-    if not (
-        axm.common.INPUT_COL_VAR in user_str and axm.common.INPUT_TXT_VAR in user_str
-    ):
-        if (axm.common.cur_file, axm.common.cur_sect) not in axm.common.opt_dict:
-            axm.common.opt_dict[(axm.common.cur_file, axm.common.cur_sect)] = []
-        axm.common.opt_dict[(axm.common.cur_file, axm.common.cur_sect)].append(
-            axcol_name
-        )
+    if not (common.INPUT_COL_VAR in user_str and common.INPUT_TXT_VAR in user_str):
+        if (common.cur_file, common.cur_sect) not in common.opt_dict:
+            common.opt_dict[(common.cur_file, common.cur_sect)] = []
+        common.opt_dict[(common.cur_file, common.cur_sect)].append(outcol_name)
 
 
 if not symbol_exists(_IMPORTER_SYMBOL):
@@ -329,9 +322,5 @@ if not symbol_exists(_IMPORTER_SYMBOL):
     )
 
 
-axm.scheduler.add(
-    axm.common.specialize, axm.scheduler.NICE_INHERIT, [axm.common.out_input_col]
-)
-axm.scheduler.add(
-    axm.common.inherit, axm.scheduler.NICE_INHERIT, [axm.common.out_input_col]
-)
+scheduler.add(common.specialize, scheduler.NICE_INHERIT, [common.out_input_col])
+scheduler.add(common.inherit, scheduler.NICE_INHERIT, [common.out_input_col])
