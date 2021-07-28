@@ -4,11 +4,11 @@
 # SPDX-license-identifier: 0BSD
 
 import argparse
-import os.path
+import os
 import sys
 
+from alive_progress import alive_bar
 from loguru import logger
-import progress.bar
 
 # Script can also be used as a module.
 try:
@@ -72,19 +72,23 @@ def main(arg_dict=None):
     max_num_oper = 0
     for data_tuple in data_list:
         max_num_oper += data_tuple.num_oper
+    # Check if unicode is supported and set
+    # progress bar theme based on it.
+    bar_theme_settings = {"bar": "smooth", "spinner": "waves"}
+    if sys.getdefaultencoding() != "utf-8" or os.name == "nt":
+        bar_theme_settings = {"bar": "classic2", "spinner": "classic"}
 
     # Convert input file to Axelor-compatible CSV.
     logic.commit_headers()
-    with progress.bar.IncrementalBar(
-        message="Generating output",
-        max=max_num_oper,
-        suffix="%(index)d/%(max)d ETA: %(eta_td)s",
+    with alive_bar(
+        max_num_oper, title="Generating output", **bar_theme_settings
     ) as progress_bar:
         while (parser_tuple := data_list.parser()) is not None:
             filename, sectionname, header_list, content = parser_tuple
+            progress_bar.text(msg_handler.get_id((filename, sectionname)))
             logic.init(filename, sectionname, header_list)
             logic.main(content)
-            progress_bar.next()
+            progress_bar()
 
 
 def get_arg_dict():
@@ -184,6 +188,12 @@ try:
         __version__ = version_file.readline()
 except FileNotFoundError:
     pass
+
+# Fixes an issue with Windows where the
+# progress bar infinitely scrolls up.
+# (Issue #97 on alive-progress GitHub)
+if os.name == "nt":
+    os.system("")
 
 if __name__ == "__main__":
     main()
