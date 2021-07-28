@@ -10,9 +10,9 @@ This script generates an Axelor-importable CSV file from an inventory list.
 Requirements
 ------------
 - `Python 3.9 or later <https://www.python.org/downloads/>`_
+- `alive-progress <https://pypi.org/project/alive-progress/>`_
 - `loguru <https://pypi.org/project/loguru/>`_
 - `openpyxl <https://pypi.org/project/openpyxl/>`_
-- `progress <https://pypi.org/project/progress/>`_
 
 Poetry is used to install the dependencies. Click `here <https://python-poetry.org/docs/>`_ for instructions on how to install Poetry.
 
