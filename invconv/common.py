@@ -39,6 +39,18 @@ output_file_path = ""
 # Must be exact match.
 SUPPORTED_FORMAT_VER = 4
 
+# Contains variables meant to be used by all logic functions.
+file_name = ""
+section_name = ""
+# In some cases, functions
+# might be run multiple times
+# while in the same row, possibly
+# skewing values. This keeps track
+# of the number of rows outputted
+# (starting at zero).
+row_incr = 0
+csv_row = {}
+
 
 def init(fptr):
     data_parser = ini.data_parser
