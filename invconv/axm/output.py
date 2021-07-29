@@ -6,6 +6,21 @@ try:
 except ModuleNotFoundError:
     import invconv.axm.common as common
 
+# Handle user-defined functions that modify input text.
+_FUNCTION_MAP = {}
+
+
+def get_func(outcol):
+    if outcol not in _FUNCTION_MAP:
+        return None
+    return _FUNCTION_MAP[outcol]
+
+
+def set_func(outcol, incol):
+    global _FUNCTION_MAP
+    _FUNCTION_MAP[outcol] = incol
+
+
 # Checks if the input column name matches the valid
 # input column for a given output column. If the valid input
 # column is None or non-existant, the function always returns True,
@@ -37,7 +52,8 @@ def is_valid_input_col(file_section, output_col, input_col):
     return False
 
 
-def string(file_section, output_col, input_txt, output_func=None):
+def string(file_section, output_col, input_txt):
+    output_func = get_func(output_col)
     # Need to conform the file-section name sheme used internally in the script
     # to the scheme used by the AXM file.
     proper_file_section = common.get_file_sect(file_section[0], file_section[1])
