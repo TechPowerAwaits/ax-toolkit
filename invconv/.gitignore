@@ -5,5 +5,3 @@
 *.xlsx
 !default.axm
 !demo.ini
-!test/expected.csv
-!test/test.xlsx
