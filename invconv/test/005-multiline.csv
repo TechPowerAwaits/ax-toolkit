@@ -1,0 +1,4 @@
+procurementMethodSelect,purchasesUnit_importId,importId,productSubTypeSelect,purchaseCurrency_importId,productTypeSelect,salePrice,picture_importId,managPriceCoef,purchasePrice,defaultSupplierPartner_importId,internalDescription,salesUnit_importId,name,productFamily_importId,code,description,productCategory_importId,saleSupplySelect,fullName,saleCurrency_importId
+,1,1,,,storable,0.00,,,0.00,,"Breed: Calico
+Age: 5",1,Peaches,2,EQPT-0000,"Breed: Calico
+Age: 5",18,,[EQPT-0000] Peaches,

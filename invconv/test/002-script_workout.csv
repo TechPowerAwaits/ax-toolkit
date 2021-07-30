@@ -1,0 +1,4 @@
+procurementMethodSelect,purchasesUnit_importId,importId,productSubTypeSelect,purchaseCurrency_importId,productTypeSelect,salePrice,picture_importId,managPriceCoef,purchasePrice,defaultSupplierPartner_importId,internalDescription,salesUnit_importId,name,productFamily_importId,code,description,productCategory_importId,saleSupplySelect,fullName,saleCurrency_importId
+,18,1,,,storable,0.00,,,0.25,,"A test,",18,Test Product #1,1,EQPT-0000,"A test,",14,,[EQPT-0000] Test Product #1,
+,18,2,,,storable,15,,,1.00,,"Yet another test,",18,Test Product #2,1,HSGT-0000,"Yet another test,",14,,[HSGT-0000] Test Product #2,
+,1,3,,,storable,5000000,,,5550.25,,Why is there a third test?,1,Test Product #3,1,TRAN-0000,Why is there a third test?,14,,[TRAN-0000] Test Product #3,
