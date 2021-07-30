@@ -10,6 +10,7 @@ This script generates an Axelor-importable CSV file from an inventory list.
 Requirements
 ------------
 - `Python 3.9 or later <https://www.python.org/downloads/>`_
+- `loguru <https://pypi.org/project/loguru/>`_
 - `openpyxl <https://pypi.org/project/openpyxl/>`_
 - `progress <https://pypi.org/project/progress/>`_
 
