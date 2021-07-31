@@ -80,7 +80,12 @@ def specialize(table):
     # Setting the sources in here in order to ensure all the sources have
     # been populated (avoiding a race condition). The sources might be set
     # multiple times, but since it uses a set, it won't have duplicates.
-    set_file_section_source(list(out_input_col.keys()), list(column_output_dict.keys()))
+    join_list = list(out_input_col.keys())
+    join_list.extend(list(column_output_dict.keys()))
+    # A joined list is used as opposed to specifying both sources
+    # seperately because a valid axm mapping file might fill out_input_col
+    # and not column_output_dict and vice versa.
+    set_file_section_source(join_list)
     file_section_set = get_file_section_set()
     # Since this is a more generic function,
     # need to check whether table is dict or list.
@@ -206,8 +211,10 @@ def get_file_name(file_name):
     # sources in order to be able to convert the non
     # axm file-section pairs to the axm file-section pairs.
     # That way, everything in the avoid list can be
-    # dealt with appropriately.
-    set_file_section_source(avoid_list)
+    # dealt with appropriately. Only do so if the avoid_list
+    # is not empty.
+    if avoid_list:
+        set_file_section_source(avoid_list)
     file_section_set = get_file_section_set()
 
     for file_section in file_section_set:
