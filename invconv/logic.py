@@ -228,7 +228,7 @@ def get_product_type(cell_val):
         ):
             prod_type = common.meta_table["axelor_product_types"][product_type]
             break
-    if len(prod_type) == 0:
+    if not prod_type:
         prod_type = common.meta_table["axelor_product_types"][
             common.fallback["axelor_product_types"]
         ]
@@ -353,7 +353,7 @@ def main(val):
         pos_index = 0
         # Only commit if there is content in csv_row.
         # There won't be if a section is avoided, for instance.
-        if len(csv_row) > 0:
+        if csv_row:
             commit_row()
             row_incr += 1
         else:

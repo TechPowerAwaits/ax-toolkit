@@ -273,7 +273,7 @@ def _act_delegator(line, parse_func):
                     delegate_var
                 ]
                 is_valid_oper = True
-    if len(possible_input_cols) > 0:
+    if possible_input_cols:
         common.out_input_col[(common.cur_file, common.cur_sect)][
             target_var
         ] = possible_input_cols
