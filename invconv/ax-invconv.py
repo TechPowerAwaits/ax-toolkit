@@ -5,6 +5,7 @@
 
 import argparse
 import os.path
+import sys
 
 from loguru import logger
 import progress.bar
@@ -42,6 +43,7 @@ def main(arg_dict=None):
         map_file = arg_dict["map_file"]
         common.is_debug = arg_dict["debug"]
         file_type = arg_dict["type"]
+        common.output_file_path = get_proper_output(arg_dict["output"])
     except KeyError:
         raise InvconvArgumentError
     # Set up logger.
@@ -131,8 +133,36 @@ def get_arg_dict():
         )
 
     parser.add_argument("input", nargs="+", help="Input file(s)")
+    parser.add_argument(
+        "-o", "--output", default="", help="File or path to place csv file"
+    )
     parser_dict = vars(parser.parse_args())
     return parser_dict
+
+
+def get_proper_output(output_path):
+    output_file = ""
+    if common.is_debug:
+        if output_path.endswith("stdout"):
+            output_file = sys.stdout
+        if output_path.endswith("stderr") or not output_path:
+            output_file = sys.stderr
+        # If output_file has something in it, return right away
+        # to avoid InvconvArgumentError.
+        if output_file:
+            return output_file
+    # Checks if a file already exists (which gets replaced) or if
+    # ".csv" exists in output_path (in which case, file gets created).
+    if os.path.isfile(output_path) or output_path.endswith(".csv"):
+        output_file = output_path
+        # Replace the file if it already existed.
+        with open(output_file, "w", newline=""):
+            pass
+    elif os.path.isdir(output_path):
+        output_file = os.path.join(output_path, common.axelor_csv_type.title() + ".csv")
+    else:
+        raise InvconvArgumentError
+    return output_file
 
 
 def set_fallback(arg_dict):

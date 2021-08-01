@@ -27,6 +27,14 @@ arg_tuple = collections.namedtuple("arg_tuple", ("short", "long", "help"))
 # When enabled, provides extra debugging information.
 is_debug = False
 
+# Axelor CSV type is used as filename if only directory has been provided
+# in arguments to the script.
+axelor_csv_type = ""
+
+# Stores the output_file, which is either a string to a file or
+# a file stream.
+output_file_path = ""
+
 # Supported data file version number.
 # Must be exact match.
 SUPPORTED_FORMAT_VER = 4
@@ -38,6 +46,7 @@ def init(fptr):
 
     global arg_dict
     global axelor_csv_columns
+    global axelor_csv_type
     global constants
     global fallback
     global meta_table
