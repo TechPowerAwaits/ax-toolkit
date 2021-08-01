@@ -3,7 +3,6 @@
 
 import csv
 import string
-import sys
 
 from loguru import logger
 
@@ -300,8 +299,13 @@ def main(val):
 
 
 def commit_headers():
-    csv_out = csv.writer(sys.stdout, dialect="excel")
-    csv_out.writerow(common.axelor_csv_columns)
+    if isinstance(common.output_file_path, str):
+        with open(common.output_file_path, "a", newline="") as fptr:
+            csv_out = csv.writer(fptr, dialect="excel")
+            csv_out.writerow(common.axelor_csv_columns)
+    else:
+        csv_out = csv.writer(common.output_file_path, dialect="excel")
+        csv_out.writerow(common.axelor_csv_columns)
 
 
 import_id_incr = 0
@@ -325,6 +329,11 @@ def commit_row():
     for ax_column in common.axelor_csv_columns:
         row_list.append(csv_row[ax_column])
 
-    csv_out = csv.writer(sys.stdout, dialect="excel")
-    csv_out.writerow(row_list)
+    if isinstance(common.output_file_path, str):
+        with open(common.output_file_path, "a", newline="") as fptr:
+            csv_out = csv.writer(fptr, dialect="excel")
+            csv_out.writerow(row_list)
+    else:
+        csv_out = csv.writer(common.output_file_path, dialect="excel")
+        csv_out.writerow(row_list)
     csv_row.clear()
