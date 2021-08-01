@@ -35,7 +35,7 @@ def parse(axm_fptr):
         # will just be the text without the comment.
         line = line[0]
     # Guards against blank lines and commented lines.
-    if len(line) > 0:
+    if line:
         if command.verify(line):
             for command_type in command.get(command.ALL_COMMANDS):
                 if command_type.check_func(line):

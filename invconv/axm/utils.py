@@ -16,7 +16,7 @@ def get_table_type(table):
         table_type = "list"
     if isinstance(table, dict):
         key_list = list(table.keys())
-        if len(key_list) == 0:
+        if not key_list:
             table_type = "dict"
         else:
             # Use a key to test what
@@ -75,7 +75,7 @@ def reset_eof(axm_fptr):
 def split_n_strip(string, sep):
     split_list = []
     tmp_list = []
-    if len(string) == 0:
+    if not string:
         split_list.append("")
     else:
         for index_char in enumerate(string):

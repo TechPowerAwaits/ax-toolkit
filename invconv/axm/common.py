@@ -117,7 +117,7 @@ def specialize(table):
                     pass
     # For other cases, add the more specific file-section pairs
     # for the specialized file sections.
-    elif len(generic_file_section_list) > 0:
+    elif generic_file_section_list:
         for generic_file_section_pair in generic_file_section_list:
             generic_file_name = generic_file_section_pair[0]
             for file_section_pair in file_section_set:
@@ -192,7 +192,7 @@ def set_file_section_source(*sources):
         # Technically, an empty iterable object is still
         # iterable, but for all practical purposes, it is
         # probably not wanted nor expected.
-        if hasattr(source, "__iter__") and len(source) > 0:
+        if hasattr(source, "__iter__") and source:
             _file_section_set.update(source)
         else:
             raise AxmSourceNotIterable(source)
@@ -228,7 +228,7 @@ def get_file_name(file_name):
             return_name = axm_file_name
             break
     # Test out file_name without file extension.
-    if (file_ext_pos := file_name.rfind(".")) != -1 and len(return_name) == 0:
+    if (file_ext_pos := file_name.rfind(".")) != -1 and not return_name:
         max_pos = len(file_name) - 1
         # Don't bother checking for file extension if filename
         # is one character long or file_ext_pos wasn't found.
@@ -256,7 +256,7 @@ def get_sect_name(sect_name):
         if sect_name == axm_sect_name:
             return_name = axm_sect_name
             break
-    if len(return_name) == 0:
+    if not return_name:
         strip_sect_name = sect_name.strip()
         # Only run the function again if
         # the strip_sect_name is distinct from
@@ -272,10 +272,10 @@ def get_sect_name(sect_name):
 # tuple.
 def get_file_sect(file_name, section_name):
     axm_file_name = get_file_name(file_name)
-    if len(axm_file_name) == 0:
+    if not axm_file_name:
         axm_file_name = file_fallback
     axm_sect_name = get_sect_name(section_name)
-    if len(axm_sect_name) == 0:
+    if not axm_sect_name:
         axm_sect_name = sect_fallback
     file_section = (axm_file_name, axm_sect_name)
 

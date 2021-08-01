@@ -218,7 +218,7 @@ def _post_del():
             for output_col in common.del_dict[file_section]:
                 if output_col in common.out_input_col[file_section]:
                     del common.out_input_col[file_section][output_col]
-            if len(common.out_input_col[file_section]) == 0:
+            if not common.out_input_col[file_section]:
                 # Add to avoid_list so that section can be removed
                 # later.
                 common.avoid_list.append(file_section)
