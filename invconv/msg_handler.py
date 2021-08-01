@@ -130,6 +130,18 @@ def set_log(logfile):
         errors="replace",
     )
 
+    # Add script name and version to log.
+    ver_path = os.path.join(os.path.pardir, "VERSION")
+    try:
+        with open(ver_path, "r") as version_file:
+            logger.info(version_file.readline())
+    except FileNotFoundError:
+        logger.info("Unknown Script")
+
+    # Add to log if debug mode is enabled.
+    if common.is_debug:
+        logger.info("Debug Mode has been enabled.")
+
 
 def get_default_logname():
     logname_list = []
