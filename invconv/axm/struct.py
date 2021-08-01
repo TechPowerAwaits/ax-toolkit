@@ -12,13 +12,13 @@ except ModuleNotFoundError:
     from invconv.axm.exceptions import AxmNameExists, AxmInvalidName
     import invconv.axm.utils as utils
 
-struct_tuple = collections.namedtuple("struct_tuple", ("check_func", "parse_func"))
+StructTuple = collections.namedtuple("StructTuple", ("check_func", "parse_func"))
 
 # Floats in the axm language are internally a modified namedtuple.
-_tmp_float_tuple = collections.namedtuple("float_tuple", ("whole", "remainder"))
+_TmpFloatTuple = collections.namedtuple("FloatTuple", ("whole", "remainder"))
 
 
-class float_tuple(_tmp_float_tuple):
+class FloatTuple(_TmpFloatTuple):
     def __float__(self):
         return float(self.__str__())
 
@@ -38,7 +38,7 @@ def add(name, check_func, parse_func):
         raise AxmInvalidName(name)
     if name in _struct_dict:
         raise AxmNameExists(name)
-    _struct_dict[name] = struct_tuple(check_func, parse_func)
+    _struct_dict[name] = StructTuple(check_func, parse_func)
 
 
 def get(name):
@@ -76,7 +76,7 @@ def _check_float(line):
 def _parse_float(line):
     if _check_float(line):
         tmp_list = utils.split_n_strip(line, ".")
-        tuple_impl = float_tuple(whole=int(tmp_list[0]), remainder=int(tmp_list[1]))
+        tuple_impl = FloatTuple(whole=int(tmp_list[0]), remainder=int(tmp_list[1]))
         return tuple_impl
     return None
 

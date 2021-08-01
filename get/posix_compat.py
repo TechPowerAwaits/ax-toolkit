@@ -7,7 +7,7 @@ import getpass
 import os
 import sys
 
-user_tuple = collections.namedtuple("user_tuple", ("name", "uid", "gid"))
+UserTuple = collections.namedtuple("UserTuple", ("name", "uid", "gid"))
 
 if os.name == "posix":
     import pwd
@@ -56,7 +56,7 @@ def get_tomcat_info():
             tomcat_gid = tomcat_info[3]
         except KeyError:
             tomcat_name = None
-    return user_tuple(tomcat_name, tomcat_uid, tomcat_gid)
+    return UserTuple(tomcat_name, tomcat_uid, tomcat_gid)
 
 
 # A recursive chown function.

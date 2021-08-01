@@ -20,7 +20,7 @@ except ModuleNotFoundError:
     import invconv.axm.utils as utils
 
 
-class oper_tuple:
+class OperStruct:
     def _default_action_func(self, line, parse_func):
         parse_result = parse_func(line)
         if (common.cur_file, common.cur_sect) not in common.out_input_col:
@@ -117,7 +117,7 @@ def add(name, symbol, find_func=None, parse_func=None, action_func=None):
         raise AxmInvalidName
     if name in _oper_dict:
         raise AxmNameExists
-    _oper_dict[name] = oper_tuple(symbol, find_func, parse_func, action_func)
+    _oper_dict[name] = OperStruct(symbol, find_func, parse_func, action_func)
 
 
 def get(name):

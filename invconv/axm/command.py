@@ -26,14 +26,14 @@ except ModuleNotFoundError:
     import invconv.axm.scheduler as scheduler
     import invconv.axm.struct as struct
 
-command_tuple = collections.namedtuple(
-    "command_tuple", ("name", "check_func", "action_func")
+CommandTuple = collections.namedtuple(
+    "CommandTuple", ("name", "check_func", "action_func")
 )
 
 # Confirms whether a operator exists in
 # a string. It is generic and doesn't check
 # whether the operator is being used properly
-# (as opposed to check_func in command_tuple).
+# (as opposed to check_func in CommandTuple).
 # It does check, however, whether it is indeed
 # a registered operator.
 def verify(line):
@@ -84,7 +84,7 @@ def add(name, check_func, action_func):
     for item in _command_list:
         if item.name == name:
             raise AxmNameExists(name)
-    _command_list.append(command_tuple(name, check_func, action_func))
+    _command_list.append(CommandTuple(name, check_func, action_func))
 
 
 def get(name):
