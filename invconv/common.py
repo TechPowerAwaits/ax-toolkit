@@ -22,7 +22,7 @@ fallback = {}
 # the list of arguments to
 # be parsed by the script.
 arg_dict = {}
-arg_tuple = collections.namedtuple("arg_tuple", ("short", "long", "help"))
+ArgTuple = collections.namedtuple("ArgTuple", ("short", "long", "help"))
 
 # When enabled, provides extra debugging information.
 is_debug = False
@@ -79,7 +79,7 @@ def init(fptr):
             # Also deal with creating the dictionary of arguments.
             shortform_arg = data_parser["ARGUMENTS_ABREV"][constant_name]
             longform_arg = data_parser["ARGUMENTS"][constant_name]
-            arg_dict[constant_name.lower()] = arg_tuple(
+            arg_dict[constant_name.lower()] = ArgTuple(
                 short=shortform_arg,
                 long=longform_arg,
                 help=generate_help(constant_name),

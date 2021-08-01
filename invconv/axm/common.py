@@ -56,15 +56,15 @@ input_col_dict = {}
 # and the axm file itself must be an exact match. For the minor version
 # number, the one in the axm file must be less than or equal to the one
 # in SUPPORTED_AXM_VER.
-_tmp_ver_tuple = collections.namedtuple("ver_tuple", ("major", "minor"))
+_TmpVerTuple = collections.namedtuple("VerTuple", ("major", "minor"))
 
 
-class ver_tuple(_tmp_ver_tuple):
+class VerTuple(_TmpVerTuple):
     def __str__(self):
         return str(self.major) + "." + str(self.minor)
 
 
-SUPPORTED_AXM_VER = ver_tuple(3, 2)
+SUPPORTED_AXM_VER = VerTuple(3, 2)
 # Only need to check the version once.
 version_checked = False
 

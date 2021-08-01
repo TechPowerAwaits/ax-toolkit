@@ -17,7 +17,7 @@ NICE_VALID_COL = 25
 NICE_OUT_STRING = 30
 
 
-class _scheduler_internal_def:
+class _SchedulerInternalDef:
     def _get_func_name(self):
         func_str = str(self.func)
         func_str = func_str.removeprefix("<function ")
@@ -46,24 +46,24 @@ class _scheduler_internal_def:
 
     def convert(self):
         if isinstance(self.param_list, dict):
-            return _scheduler_dict_def(self.func, self.param_list)
-        return _scheduler_list_def(self.func, self.param_list)
+            return _SchedulerDictDef(self.func, self.param_list)
+        return _SchedulerListDef(self.func, self.param_list)
 
 
-class _scheduler_common_def:
+class _SchedulerCommonDef:
     def __init__(self, func, param_list):
         self.func = func
         self.param_list = param_list
 
 
-class _scheduler_list_def(_scheduler_common_def):
+class _SchedulerListDef(_SchedulerCommonDef):
     def run(self):
         func = self.func
         param_list = self.param_list
         func(*param_list)
 
 
-class _scheduler_dict_def(_scheduler_common_def):
+class _SchedulerDictDef(_SchedulerCommonDef):
     def run(self):
         func = self.func
         param_dict = self.param_list
@@ -81,7 +81,7 @@ MIN_NICE_VAL = 0
 
 def add(func, nice, param_list=None):
     global _scheduler_list
-    _scheduler_list.append(_scheduler_internal_def(func, nice, param_list))
+    _scheduler_list.append(_SchedulerInternalDef(func, nice, param_list))
 
 
 # Removes the first definition that had a given nice value.
