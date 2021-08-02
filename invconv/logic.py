@@ -208,14 +208,35 @@ def get_unit(cell_val):
 
 
 def get_price(cell_val):
-    price_str = ""
+    price_list = []
+    # Ensure that only one decimal will
+    # be in price.
+    one_dec_point = False
+    # Keep track over whether digits are being
+    # found or not.
+    found_digit = False
+
     for char in cell_val:
-        if char in string.digits or char == ".":
-            price_str += char
-    # price_str could be empty or just contain dots
-    # depending on the value in the cell.
-    highest_index = len(price_str) - 1
-    if len(price_str) == 0 or price_str.rfind(".") == highest_index:
+        if char in string.digits:
+            price_list.append(char)
+            found_digit = True
+        # Only append decimal point if one was not found earlier
+        # and if digits were found before.
+        elif char == "." and found_digit and not one_dec_point:
+            price_list.append(char)
+            one_dec_point = True
+        else:
+            # Ensure a decimal isn't the last
+            # character in list.
+            if found_digit:
+                if price_list[-1] == ".":
+                    del price_list[-1]
+                break
+
+    # price_str could be empty or contain an actual
+    # price.
+    price_str = "".join(price_list)
+    if not price_str:
         logger.warning(
             string.Template(
                 'Cell in $id has "$val" and not cost. Defaulting to 0.00.'
