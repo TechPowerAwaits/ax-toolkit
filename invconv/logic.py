@@ -94,42 +94,32 @@ def get_intern_descript(intern_descript):
     return intern_descript
 
 
-def get_fam_id(cell_val):
-    fam_id = -1
-    for prod_fam in common.meta_table["axelor_product_families"]:
-        if prod_fam == cell_val:
-            fam_id = common.meta_table["axelor_product_families"][cell_val]
-            break
-    if fam_id == -1:
-        for prod_fam in common.meta_table["axelor_product_families_abrev"]:
-            fam_short = common.meta_table["axelor_product_families_abrev"][prod_fam]
-            if fam_short in cell_val:
-                fam_id = common.meta_table["axelor_product_families"][prod_fam]
+def get_group_id_gen(table_name):
+    def get_group_id(cell_val):
+        group_id = -1
+        for group_name in common.meta_table[table_name]:
+            if group_name.title() == cell_val.title():
+                group_id = common.meta_table[table_name][group_name]
                 break
-    if fam_id == -1:
-        fam_id = common.meta_table["axelor_product_families"][
-            common.fallback["axelor_product_families"]
-        ]
-    return fam_id
+        if (
+            group_id == -1
+            and (abrev_table := f"{table_name}_abrev") in common.meta_table
+        ):
+            for group_name in common.meta_table[abrev_table]:
+                group_short = common.meta_table[abrev_table][group_name]
+                if group_short in cell_val.upper():
+                    group_id = common.meta_table[table_name][group_name]
+                    break
+        if group_id == -1:
+            group_id = common.meta_table[table_name][common.fallback[table_name]]
+
+        return group_id
+
+    return get_group_id
 
 
-def get_cat_id(cell_val):
-    cat_id = -1
-    for prod_cat in common.meta_table["axelor_product_categories"]:
-        if cat_id == cell_val:
-            cat_id = common.meta_table["axelor_product_categories"][cell_val]
-            break
-    if cat_id == -1:
-        for prod_cat in common.meta_table["axelor_product_categories"]:
-            cat_short = common.meta_table["axelor_product_categories_abrev"][prod_cat]
-            if cat_short in cell_val:
-                cat_id = common.meta_table["axelor_product_categories"][prod_cat]
-                break
-    if cat_id == -1:
-        cat_id = common.meta_table["axelor_product_categories"][
-            common.fallback["axelor_product_categories"]
-        ]
-    return cat_id
+get_fam_id = get_group_id_gen("axelor_product_families")
+get_cat_id = get_group_id_gen("axelor_product_categories")
 
 
 def gen_code(cell_val):
