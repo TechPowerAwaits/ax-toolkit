@@ -189,15 +189,19 @@ def get_product_type(cell_val):
 def get_unit(cell_val):
     unit = ""
     for ax_unit in common.meta_table["axelor_units"]:
-        if ax_unit in cell_val:
+        if ax_unit.title() in cell_val.title():
             unit = ax_unit
             break
-        if ax_unit in common.meta_table["axelor_units_abrev"] and find_unit_shorthand(
-            cell_val, common.meta_table["axelor_units_abrev"][ax_unit]
+        if (
+            not unit
+            and ax_unit in common.meta_table["axelor_units_abrev"]
+            and find_unit_shorthand(
+                cell_val, common.meta_table["axelor_units_abrev"][ax_unit]
+            )
         ):
             unit = ax_unit
             break
-    if len(unit) == 0:
+    if not unit:
         unit = common.fallback["axelor_units"]
     unit_id = common.meta_table["axelor_units"][unit]
     return unit_id
