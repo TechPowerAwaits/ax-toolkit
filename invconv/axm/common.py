@@ -321,14 +321,14 @@ def prep_valid_col_dict():
 # produce a different valid input column.
 def find_valid_col():
     global valid_col_dict
-    # The given file and section name might be different
-    # from what is used in the AXM file, since a file extension
-    # might be missing, and as well, the axm file doesn't usually
-    # include the path to the file which is what the given file name
-    # almost always give.
     for file_section in input_col_dict:
         file_name = file_section[0]
         section_name = file_section[1]
+        # The given file and section name might be different
+        # from what is used in the AXM file, since a file extension
+        # might be missing, and as well, the axm file doesn't usually
+        # include the path to the file which is what the given file name
+        # almost always give.
         proper_file_section = get_file_sect(file_name, section_name)
         if proper_file_section in valid_col_dict:
             valid_input_cols = input_col_dict[file_section]
@@ -336,23 +336,29 @@ def find_valid_col():
             # indexed by output col.
             possible_input_dict = out_input_col[proper_file_section]
             for output_col in valid_col_dict[proper_file_section]:
+                # Do everything starting in terms of possible_input_cols, as the
+                # ordering of that list is canonical.
                 possible_input_cols = possible_input_dict[output_col]
-                if valid_col_dict[proper_file_section][output_col] is None:
+                for possible_input_col in possible_input_cols:
                     # First, test all possible input columns for exact input column matches.
                     # (Keeping in mind that the possible input columns are all caps.)
                     for valid_input_col in valid_input_cols:
-                        if valid_input_col.upper() in possible_input_cols:
+                        if (
+                            valid_input_col.upper() == possible_input_col
+                            and valid_col_dict[proper_file_section][output_col] is None
+                        ):
                             valid_col_dict[proper_file_section][
                                 output_col
                             ] = valid_input_col
-                # Then, try to find possible_col within input_col.
-                if valid_col_dict[proper_file_section][output_col] is None:
+                    # Then, try to find possible_col within input_col.
                     for valid_input_col in valid_input_cols:
-                        for possible_input_col in possible_input_cols:
-                            if possible_input_col in valid_input_col.upper():
-                                valid_col_dict[proper_file_section][
-                                    output_col
-                                ] = valid_input_col
+                        if (
+                            possible_input_col in valid_input_col.upper()
+                            and valid_col_dict[proper_file_section][output_col] is None
+                        ):
+                            valid_col_dict[proper_file_section][
+                                output_col
+                            ] = valid_input_col
 
 
 # Remove all file-section pairs and variables that
