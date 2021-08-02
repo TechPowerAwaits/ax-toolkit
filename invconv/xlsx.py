@@ -53,7 +53,7 @@ class XlsxDataTuple(ftype.BasicFtypeDataClass):
         self.max_col = max_col
 
         delta_col = self.max_col - self.min_col + 1
-        delta_row = self.max_row - self.max_col + 1
+        delta_row = self.max_row - self.min_row + 1
         self.num_oper = delta_col * delta_row
         return self.num_oper
 
