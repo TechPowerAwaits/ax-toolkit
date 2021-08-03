@@ -1,6 +1,7 @@
 # Copyright 2021 Richard Johnston <techpowerawaits@outlook.com>
 # SPDX-license-identifier: 0BSD
 
+import collections
 import csv
 import string
 
@@ -148,7 +149,17 @@ get_fam_id = get_group_id_gen("axelor_product_families")
 get_cat_id = get_group_id_gen("axelor_product_categories")
 
 
+# Keeps track of the name used for
+# the code and the row_incr used at
+# the time it was last updated. If
+# the row_incr has changed since then,
+# cur_val will be incremented.
+used_code_nums = {}
+CodeTracker = collections.namedtuple("CodeTracker", ("row_incr", "cur_val"))
+
+
 def gen_code(cell_val):
+    global used_code_nums
     code = ""
     cat_id = get_cat_id(cell_val)
     cat = ""
@@ -168,32 +179,44 @@ def gen_code(cell_val):
             fam = family
             fam_short = common.meta_table["axelor_product_families_abrev"].get(fam, "")
             break
+    # If category value is fallback, use family instead and
+    # vice-versa.
     if cat == common.fallback["axelor_product_categories"]:
-        if len(fam_short) > 0:
+        if fam_short:
             code = fam_short.upper().replace(" ", "_")
     else:
-        if len(cat_short) > 0:
-            code = fam_short.upper().replace(" ", "_")
-    if len(code) == 0:
-        if len(csv_row.get("name", "")) == 0:
+        if cat_short:
+            code = cat_short.upper().replace(" ", "_")
+    if not code:
+        if not csv_row.get("name", ""):
             code = "INVCONV"
         else:
             code = csv_row["name"].upper().replace(" ", "_")
+    # Start cur_val at zero.
+    if code not in used_code_nums:
+        used_code_nums[code] = CodeTracker(row_incr=row_incr, cur_val=0)
+    # If row_incr in CodeTracker isn't equal to current row_incr,
+    # increment cur_val.
+    if used_code_nums[code].row_incr != row_incr:
+        used_code_nums[code] = CodeTracker(
+            row_incr=row_incr, cur_val=used_code_nums[code].cur_val + 1
+        )
     # A list is used to make code more portable.
     tmp_code_list = [code, "-"]
-    # Row number starting at zero is used in code.
+    # cur_val starting at zero is used in code.
     # Numbers under 1000 are prepended with zeros.
-    if row_incr >= 1000:
+    cur_val = used_code_nums[code].cur_val
+    if cur_val >= 1000:
         pass
-    elif row_incr >= 100:
+    elif cur_val >= 100:
         tmp_code_list.append("0")
-    elif row_incr >= 10:
+    elif cur_val >= 10:
         tmp_code_list.append("00")
     else:
         tmp_code_list.append("000")
-    tmp_code_list.append(str(row_incr))
-    code = "".join(tmp_code_list)
-    return code
+    tmp_code_list.append(str(cur_val))
+    full_code = "".join(tmp_code_list)
+    return full_code
 
 
 def get_product_type(cell_val):
