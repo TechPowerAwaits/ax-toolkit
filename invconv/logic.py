@@ -24,49 +24,75 @@ except ModuleNotFoundError:
 # including the Axelor column row).
 row_incr = 0
 
-# A seperate function is requied for units,
-# as some shorthand forms can be one character long.
+# A seperate function is required for units,
+# as some abbreviated forms can be one character long.
 # Need to ensure it is shortly after a number.
 def find_unit_shorthand(haystack, needle):
-    contain_num = False
-    for digit in string.digits:
-        if digit in haystack:
-            contain_num = True
-    if contain_num:
-        haystack_len = len(haystack)
-        needle_len = len(needle)
-        found_int_or_space = False
-        for index in range(haystack_len):
-            if (haystack[index] in string.digits) or (
-                haystack[index] in string.whitespace
+    haystack_len = len(haystack)
+    haystack_final_pos = haystack_len - 1
+    needle_len = len(needle)
+    needle_final_pos = needle_len - 1
+
+    # Check for exact matches.
+    if haystack == needle:
+        return True
+
+    # Check if unit is at end of haystack (or
+    # before a period) and has a digit right
+    # before it or whitespace before a digit
+    # (ruling out false positives).
+    needle_pos = haystack.rfind(needle)
+    needle_end = needle_pos + needle_final_pos
+    if needle_end == haystack_final_pos or (
+        needle_end == (haystack_final_pos - 1) and haystack[haystack_final_pos] == "."
+    ):
+        # Ensure needle_pos has enough room for a
+        # digit before it.
+        if (needle_pos - 1) > -1 and haystack[needle_pos - 1] in string.digits:
+            return True
+        # Ensure needle_pos has enough room for a
+        # digit and whitespace before it.
+        if (
+            (needle_pos - 2) > -1
+            and haystack[needle_pos - 1] in string.whitespace
+            and haystack[needle_pos - 2] in string.digits
+        ):
+            return True
+
+    # Check if unit is surrounded by spaces
+    # or is next to a digit and seperated
+    # from other text by a space (ruling
+    # out false positives).
+    stripped_haystack = haystack
+    while (needle_pos := stripped_haystack.find(needle)) > -1:
+        needle_end = needle_pos + needle_final_pos
+        stripped_haystack_len = len(stripped_haystack)
+        stripped_haystack_final_pos = stripped_haystack_len - 1
+        # Needs room for a space on the right.
+        max_pos = stripped_haystack_final_pos - 1
+        # needle_pos cannot be in first position.
+        # Else, there will be no room for space
+        # before needle_pos. Likewise, needle_end
+        # can't be at the end of stripped_haystack.
+        # Else, it can't have a space to its right.
+        if needle_pos > 0 and needle_end <= max_pos:
+            if (
+                stripped_haystack[needle_end + 1] in string.whitespace
+                and stripped_haystack[needle_pos - 1] in string.whitespace
             ):
-                found_int_or_space = True
-            if found_int_or_space:
-                subsection_list = []
-                for incr in range(needle_len):
-                    if index + incr < haystack_len:
-                        subsection_list.append(haystack[index + incr])
-                    else:
-                        break
-                subsection = "".join(subsection_list)
-                if needle in subsection:
-                    # If it doesn't have a space after it or end right away,
-                    # it is probably a false positive.
-                    haystack_final_pos = haystack_len - 1
-                    haystack_cur_pos = index + needle_len
-                    if haystack_cur_pos > haystack_final_pos:
-                        break
-                    if haystack_cur_pos == haystack_final_pos:
-                        return True
-                    if haystack[haystack_cur_pos] in string.whitespace:
-                        return True
-                else:
-                    # Reset found_int_or_space so it doesn't keep on looking
-                    # for shorthand forms long after a number has been found,
-                    # thus leading to a false positive.
-                    found_int_or_space = False
-            else:
-                pass
+                return True
+            if (
+                stripped_haystack[needle_end + 1] in string.whitespace
+                and stripped_haystack[needle_pos - 1] in string.digits
+            ):
+                return True
+        # Remove False unit from haystack.
+        haystack_list = list(stripped_haystack)
+        incr = 0
+        while incr <= needle_end:
+            del haystack_list[0]
+            incr += 1
+        stripped_haystack = "".join(haystack_list)
 
     return False
 
