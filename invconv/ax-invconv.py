@@ -85,7 +85,12 @@ def main(arg_dict=None):
     ) as progress_bar:
         while (parser_tuple := data_list.parser()) is not None:
             filename, sectionname, header_list, content = parser_tuple
-            progress_bar.text(msg_handler.get_id((filename, sectionname)))
+            # When outputting text to stderr or stdout,
+            # pieces of the string printed by the
+            # progress_bar occasionally ends up
+            # within the text.
+            if isinstance(common.output_file_path, str):
+                progress_bar.text(msg_handler.get_id((filename, sectionname)))
             logic.init(filename, sectionname, header_list)
             logic.main(content)
             progress_bar()
