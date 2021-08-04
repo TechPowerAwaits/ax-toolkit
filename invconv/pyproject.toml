@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ax-invconv"
-version = "0.6.0"
+version = "0.6.1"
 description = "Converts an input file to an Axelor-supported CSV file."
 authors = ["Richard J. <techpowerawaits@outlook.com>"]
 license = "0BSD"

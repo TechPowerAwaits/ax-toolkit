@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ax-get"
-version = "0.6.0"
+version = "0.6.1"
 description = "Grabs a copy of Axelor ERP source code and binaries."
 authors = ["Richard J. <techpowerawaits@outlook.com>"]
 license = "0BSD"
