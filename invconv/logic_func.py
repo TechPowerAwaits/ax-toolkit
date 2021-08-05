@@ -54,7 +54,7 @@ def get_group_id_gen(table_name):
         ):
             for group_name in common.meta_table[abrev_table]:
                 group_short = common.meta_table[abrev_table][group_name]
-                if group_short in cell_val.upper():
+                if logic_utils.find_shorthand(cell_val.upper(), group_short.upper()):
                     group_id = common.meta_table[table_name][group_name]
                     break
         if group_id == -1:
