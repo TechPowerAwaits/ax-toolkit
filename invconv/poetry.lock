@@ -39,11 +39,11 @@ dev = ["codecov (>=2.0.15)", "colorama (>=0.3.4)", "flake8 (>=3.7.7)", "tox (>=3
 
 [[package]]
 name = "openpyxl"
-version = "3.0.7"
+version = "3.0.8"
 description = "A Python library to read/write Excel 2010 xlsx/xlsm files"
 category = "main"
 optional = false
-python-versions = ">=3.6,"
+python-versions = ">=3.6"
 
 [package.dependencies]
 et-xmlfile = "*"
@@ -62,7 +62,7 @@ dev = ["pytest (>=4.6.2)", "black (>=19.3b0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "cb365caa1c41008f23e9458c1a188c743928824f76edc73ea55a15f55ae1a360"
+content-hash = "0d3e831c385d9ea0a37c2fad3a61cf58440e8d5a06753e033bde84aeb5df315b"
 
 [metadata.files]
 alive-progress = [
@@ -82,8 +82,8 @@ loguru = [
     {file = "loguru-0.5.3.tar.gz", hash = "sha256:b28e72ac7a98be3d28ad28570299a393dfcd32e5e3f6a353dec94675767b6319"},
 ]
 openpyxl = [
-    {file = "openpyxl-3.0.7-py2.py3-none-any.whl", hash = "sha256:46af4eaf201a89b610fcca177eed957635f88770a5462fb6aae4a2a52b0ff516"},
-    {file = "openpyxl-3.0.7.tar.gz", hash = "sha256:6456a3b472e1ef0facb1129f3c6ef00713cebf62e736cd7a75bcc3247432f251"},
+    {file = "openpyxl-3.0.8-py2.py3-none-any.whl", hash = "sha256:52150a09b660fe444af7abe2592b156c14e324526b1968a57705525547317a7f"},
+    {file = "openpyxl-3.0.8.tar.gz", hash = "sha256:4f2770348c029ce9433316ced8f91ed37d2a605e654f8bfdc93a3524561a8ce2"},
 ]
 win32-setctime = [
     {file = "win32_setctime-1.0.3-py3-none-any.whl", hash = "sha256:dc925662de0a6eb987f0b01f599c01a8236cb8c62831c22d9cada09ad958243e"},
