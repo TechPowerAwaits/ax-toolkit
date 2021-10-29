@@ -9,7 +9,7 @@ license = "0BSD"
 python = "^3.9"
 openpyxl = "^3.0.7"
 loguru = "^0.5.3"
-alive-progress = "^1.6.2"
+alive-progress = "^2.1.0"
 
 [tool.poetry.dev-dependencies]
 
